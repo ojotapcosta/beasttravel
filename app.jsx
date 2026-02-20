@@ -53,6 +53,14 @@ function getVehicleInfo(row, cityObj) {
 }
 
 function VehicleSquare({ type, letter }) {
+  if (!letter) {
+    return (
+      <div className="relative w-10 h-10 mt-1 mb-1 mx-1 bg-gray-600/50 border-2 border-gray-600 rounded-md flex shrink-0 items-center justify-center text-gray-500 font-extrabold text-xl cursor-default" title={`Unsolved - ${type}`}>
+
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-10 h-10 mt-1 mb-1 mx-1 bg-yellow-100 border-2 border-yellow-500 shadow-[0_0_12px_rgba(234,179,8,0.5)] rounded-md flex shrink-0 items-center justify-center text-beast-900 font-extrabold text-xl cursor-default" title={type}>
       {letter}
@@ -86,8 +94,19 @@ function App() {
     return puzzleRows.map((row, index) => {
       const selectedId = selections[index];
       const cityObj = selectedId ? processedCities.find(c => c.id === selectedId) : null;
-      return getVehicleInfo(row, cityObj);
-    }).filter(Boolean);
+
+      let type = "Unknown";
+      row.blocks.forEach(b => b.forEach(i => {
+        if (i.type === 'icon') type = i.name;
+      }));
+
+      const info = selectedId ? getVehicleInfo(row, cityObj) : null;
+
+      return {
+        type: type,
+        letter: info ? info.letter : ''
+      };
+    }).filter(v => v.type !== "Unknown");
   }, [selections, processedCities]);
 
   const matchedCityIds = useMemo(() => {
