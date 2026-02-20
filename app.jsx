@@ -160,6 +160,7 @@ function App() {
             index={index}
             processedCities={processedCities}
             selected={selections[index] || ''}
+            selections={selections}
             onSelect={(val) => setSelections(s => ({ ...s, [index]: val }))}
           />
         ))}
@@ -186,10 +187,16 @@ function App() {
   );
 }
 
-function PuzzleRow({ row, index, processedCities, selected, onSelect }) {
+function PuzzleRow({ row, index, processedCities, selected, selections, onSelect }) {
   const matches = useMemo(() => {
-    return processedCities.filter(c => matchRowToCity(row, c));
-  }, [processedCities, row]);
+    // A city is a match if it fits the row AND (it is the current selection OR it hasn't been selected anywhere else)
+    const selectedValues = Object.values(selections);
+    return processedCities.filter(c => {
+      const fitsFormat = matchRowToCity(row, c);
+      const isAlreadyTaken = selectedValues.includes(c.id) && c.id !== selected;
+      return fitsFormat && !isAlreadyTaken;
+    });
+  }, [processedCities, row, selections, selected]);
 
   const selectedCityObj = useMemo(() => {
     return processedCities.find(c => c.id === selected);
@@ -257,7 +264,7 @@ function PuzzleRow({ row, index, processedCities, selected, onSelect }) {
         <div className="w-full md:w-72 flex flex-col gap-2">
           {matches.length === 0 ? (
             <div className="bg-red-900/20 text-red-400 border border-red-900/50 rounded-lg p-3 text-sm flex items-center gap-2">
-              ⚠️ No matching cities found.
+              ⚠️ {selected ? "Selected city is no longer a valid option." : "No available matching cities found."}
             </div>
           ) : (
             <div className="relative">
