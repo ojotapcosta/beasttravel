@@ -52,8 +52,26 @@ function getVehicleInfo(row, cityObj) {
   return null;
 }
 
-function VehicleSquare({ type, letter }) {
+function VehicleSquare({ type, letter, options = [], onSelect }) {
   if (!letter) {
+    if (options.length > 0) {
+      return (
+        <div className="relative w-10 h-10 mt-1 mb-1 mx-1 bg-beast-800 border-[1.5px] border-beast-button/60 hover:border-beast-button rounded-md flex shrink-0 items-center justify-center text-beast-200 font-extrabold text-xl shadow-lg transition-colors" title={`Select letter for ${type}`}>
+          <select
+            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+            onChange={(e) => onSelect(e.target.value)}
+            value=""
+          >
+            <option value="" disabled>_</option>
+            {options.map((opt, i) => (
+              <option key={i} value={opt.cityId}>{opt.letter} ({opt.cityName})</option>
+            ))}
+          </select>
+          <span className="pointer-events-none text-beast-button/70 text-lg">_</span>
+        </div>
+      );
+    }
+
     return (
       <div className="relative w-10 h-10 mt-1 mb-1 mx-1 bg-gray-600/50 border-2 border-gray-600 rounded-md flex shrink-0 items-center justify-center text-gray-500 font-extrabold text-xl cursor-default" title={`Unsolved - ${type}`}>
 
@@ -91,6 +109,8 @@ function App() {
   });
 
   const vehicles = useMemo(() => {
+    const selectedValues = Object.values(selections);
+
     return puzzleRows.map((row, index) => {
       const selectedId = selections[index];
       const cityObj = selectedId ? processedCities.find(c => c.id === selectedId) : null;
@@ -102,9 +122,38 @@ function App() {
 
       const info = selectedId ? getVehicleInfo(row, cityObj) : null;
 
+      let options = [];
+      if (!selectedId && type !== "Unknown") {
+        // Find possible valid matches for this row
+        const validCitiesForRow = processedCities.filter(c => {
+          const fitsFormat = matchRowToCity(row, c);
+          const isAlreadyTaken = selectedValues.includes(c.id);
+          return fitsFormat && !isAlreadyTaken;
+        });
+
+        // Extract the letter each valid city would produce
+        const letterMap = new Map();
+        validCitiesForRow.forEach(c => {
+          const inf = getVehicleInfo(row, c);
+          if (inf && inf.letter) {
+            if (!letterMap.has(inf.letter)) {
+              letterMap.set(inf.letter, c); // Just keep the first city that produces this letter for simplicity in the dropdown
+            }
+          }
+        });
+
+        options = Array.from(letterMap.entries()).map(([letter, city]) => ({
+          letter,
+          cityId: city.id,
+          cityName: city.name
+        })).sort((a, b) => a.letter.localeCompare(b.letter));
+      }
+
       return {
+        index,
         type: type,
-        letter: info ? info.letter : ''
+        letter: info ? info.letter : '',
+        options
       };
     }).filter(v => v.type !== "Unknown");
   }, [selections, processedCities]);
@@ -137,7 +186,7 @@ function App() {
             <span>✨</span> All Vehicles (Full Phrase)
           </h2>
           <div className="flex flex-wrap gap-2 mt-4">
-            {vehicles.map((v, i) => <VehicleSquare key={i} type={v.type} letter={v.letter} />)}
+            {vehicles.map((v, i) => <VehicleSquare key={`all-${i}`} type={v.type} letter={v.letter} options={v.options} onSelect={(cityId) => setSelections(s => ({ ...s, [v.index]: cityId }))} />)}
           </div>
         </div>
 
@@ -146,7 +195,7 @@ function App() {
             <span>🚗</span> Cars Only
           </h2>
           <div className="flex flex-wrap gap-2 mt-4">
-            {vehicles.filter(v => v.type === 'Car').map((v, i) => <VehicleSquare key={i} type={v.type} letter={v.letter} />)}
+            {vehicles.filter(v => v.type === 'Car').map((v, i) => <VehicleSquare key={`car-${i}`} type={v.type} letter={v.letter} options={v.options} onSelect={(cityId) => setSelections(s => ({ ...s, [v.index]: cityId }))} />)}
           </div>
         </div>
 
@@ -155,7 +204,7 @@ function App() {
             <span>🐎</span> Horses Only
           </h2>
           <div className="flex flex-wrap gap-2 mt-4">
-            {vehicles.filter(v => v.type === 'Horse').map((v, i) => <VehicleSquare key={i} type={v.type} letter={v.letter} />)}
+            {vehicles.filter(v => v.type === 'Horse').map((v, i) => <VehicleSquare key={`horse-${i}`} type={v.type} letter={v.letter} options={v.options} onSelect={(cityId) => setSelections(s => ({ ...s, [v.index]: cityId }))} />)}
           </div>
         </div>
 
@@ -164,7 +213,7 @@ function App() {
             <span>✈️</span> Planes Only
           </h2>
           <div className="flex flex-wrap gap-2 mt-4">
-            {vehicles.filter(v => v.type === 'Plane').map((v, i) => <VehicleSquare key={i} type={v.type} letter={v.letter} />)}
+            {vehicles.filter(v => v.type === 'Plane').map((v, i) => <VehicleSquare key={`plane-${i}`} type={v.type} letter={v.letter} options={v.options} onSelect={(cityId) => setSelections(s => ({ ...s, [v.index]: cityId }))} />)}
           </div>
         </div>
 
@@ -173,7 +222,7 @@ function App() {
             <span>⛴️</span> Boats Only
           </h2>
           <div className="flex flex-wrap gap-2 mt-4">
-            {vehicles.filter(v => v.type === 'Boat').map((v, i) => <VehicleSquare key={i} type={v.type} letter={v.letter} />)}
+            {vehicles.filter(v => v.type === 'Boat').map((v, i) => <VehicleSquare key={`boat-${i}`} type={v.type} letter={v.letter} options={v.options} onSelect={(cityId) => setSelections(s => ({ ...s, [v.index]: cityId }))} />)}
           </div>
         </div>
       </div>
@@ -192,6 +241,13 @@ function App() {
         ))}
       </div>
 
+      {/* ====== BRUTE FORCE SOLVER ====== */}
+      <BruteForceSolver
+        puzzleRows={puzzleRows}
+        processedCities={processedCities}
+        selections={selections}
+      />
+
       {unmatchedCities.length > 0 && (
         <div className="mt-12 p-8 bg-beast-800 border border-gray-700 rounded-xl shadow-xl">
           <h2 className="text-2xl font-bold text-gray-200 mb-2 flex items-center gap-2">
@@ -207,6 +263,253 @@ function App() {
               </span>
             ))}
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BruteForceSolver({ puzzleRows, processedCities, selections }) {
+  const [keywords, setKeywords] = useState('');
+  const [maxIter, setMaxIter] = useState(1000000);
+  const [isRunning, setIsRunning] = useState(false);
+  const [progress, setProgress] = useState(null);
+  const [results, setResults] = useState(null);
+  const [workerRef, setWorkerRef] = useState(null);
+
+  // Build the puzzle data: for each of the 91 rows, compute the available options (city + letter)
+  const puzzleData = useMemo(() => {
+    const selectedValues = Object.values(selections);
+
+    return puzzleRows.map((row, index) => {
+      const selectedId = selections[index];
+
+      // If already selected, lock to that one city
+      if (selectedId) {
+        const cityObj = processedCities.find(c => c.id === selectedId);
+        if (cityObj) {
+          const info = getVehicleInfo(row, cityObj);
+          const letter = info ? info.letter : cityObj.lettersFull[0] || '?';
+          return [{ id: cityObj.id, cityName: cityObj.name, letter }];
+        }
+      }
+
+      // Otherwise find all valid matches excluding already-taken cities
+      const validCities = processedCities.filter(c => {
+        const fits = matchRowToCity(row, c);
+        const taken = selectedValues.includes(c.id);
+        return fits && !taken;
+      });
+
+      if (validCities.length === 0) return [{ id: 'none', cityName: '?', letter: '?' }];
+
+      // For vehicle rows, extract the vehicle letter; for non-vehicle rows use first letter
+      return validCities.map(c => {
+        const info = getVehicleInfo(row, c);
+        const letter = info ? info.letter : c.lettersFull[0] || '?';
+        return { id: c.id, cityName: c.name, letter };
+      });
+    });
+  }, [puzzleRows, processedCities, selections]);
+
+  // Compute stats
+  const stats = useMemo(() => {
+    let total = 1n;
+    let multiMatchRows = 0;
+    let singleMatchRows = 0;
+    puzzleData.forEach(line => {
+      const uniqueLetters = [...new Set(line.map(o => o.letter))].length;
+      if (uniqueLetters > 1) multiMatchRows++;
+      else singleMatchRows++;
+      total *= BigInt(uniqueLetters);
+    });
+    return {
+      totalCombinations: total.toString(),
+      multiMatchRows,
+      singleMatchRows,
+      feasible: total <= BigInt(maxIter)
+    };
+  }, [puzzleData, maxIter]);
+
+  const handleRun = () => {
+    setIsRunning(true);
+    setResults(null);
+    setProgress({ count: 0, total: 1, resultsFound: 0 });
+
+    const kws = keywords.split(',').map(k => k.trim()).filter(Boolean);
+
+    const worker = new Worker('brute-worker.js');
+    setWorkerRef(worker);
+
+    worker.onmessage = (e) => {
+      if (e.data.type === 'progress') {
+        setProgress({
+          count: e.data.count,
+          total: e.data.total,
+          resultsFound: e.data.resultsFound
+        });
+      } else if (e.data.type === 'done') {
+        setResults(e.data);
+        setProgress(null);
+        setIsRunning(false);
+        worker.terminate();
+        setWorkerRef(null);
+      }
+    };
+
+    worker.postMessage({
+      lines: puzzleData,
+      keywords: kws,
+      maxIterations: maxIter
+    });
+  };
+
+  const handleStop = () => {
+    if (workerRef) {
+      workerRef.terminate();
+      setWorkerRef(null);
+    }
+    setIsRunning(false);
+    setProgress(null);
+  };
+
+  const progressPct = progress ? Math.min(100, (progress.count / Math.max(1, progress.total)) * 100) : 0;
+
+  return (
+    <div className="mt-12 p-8 bg-beast-800 border border-gray-700 rounded-xl shadow-2xl">
+      <h2 className="text-2xl font-bold text-gray-100 mb-2 flex items-center gap-3">
+        🔓 Brute Force Phrase Solver
+      </h2>
+      <p className="text-gray-400 text-sm mb-6">
+        Generates all possible 91-character phrases from the remaining city options and filters by keywords.
+      </p>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-gray-900/60 rounded-lg p-3 text-center">
+          <div className="text-xs text-gray-500 uppercase tracking-wide">Total Combos</div>
+          <div className={`text-lg font-bold mt-1 ${stats.feasible ? 'text-green-400' : 'text-red-400'}`}>
+            {stats.totalCombinations.length > 15 ? '∞ (too many)' : Number(stats.totalCombinations).toLocaleString()}
+          </div>
+        </div>
+        <div className="bg-gray-900/60 rounded-lg p-3 text-center">
+          <div className="text-xs text-gray-500 uppercase tracking-wide">Locked Rows</div>
+          <div className="text-lg font-bold text-green-400 mt-1">{stats.singleMatchRows}</div>
+        </div>
+        <div className="bg-gray-900/60 rounded-lg p-3 text-center">
+          <div className="text-xs text-gray-500 uppercase tracking-wide">Multi-Match</div>
+          <div className="text-lg font-bold text-yellow-400 mt-1">{stats.multiMatchRows}</div>
+        </div>
+        <div className="bg-gray-900/60 rounded-lg p-3 text-center">
+          <div className="text-xs text-gray-500 uppercase tracking-wide">Safety Limit</div>
+          <div className="text-lg font-bold text-blue-400 mt-1">{(maxIter / 1000000).toFixed(1)}M</div>
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="flex-1">
+          <label className="text-xs text-gray-500 uppercase tracking-wide block mb-1">Keywords (comma-separated)</label>
+          <input
+            type="text"
+            className="w-full bg-gray-900 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-beast-button focus:border-transparent placeholder-gray-600"
+            placeholder="THE, SECRET, BEAST, WIN, PRIZE"
+            value={keywords}
+            onChange={(e) => setKeywords(e.target.value)}
+            disabled={isRunning}
+          />
+        </div>
+        <div className="w-32">
+          <label className="text-xs text-gray-500 uppercase tracking-wide block mb-1">Max Iterations</label>
+          <select
+            className="w-full bg-gray-900 border border-gray-700 text-white rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-beast-button"
+            value={maxIter}
+            onChange={(e) => setMaxIter(Number(e.target.value))}
+            disabled={isRunning}
+          >
+            <option value={100000}>100K</option>
+            <option value={500000}>500K</option>
+            <option value={1000000}>1M</option>
+            <option value={5000000}>5M</option>
+            <option value={10000000}>10M</option>
+          </select>
+        </div>
+        <div className="flex items-end">
+          {!isRunning ? (
+            <button
+              onClick={handleRun}
+              className="bg-beast-button hover:bg-beast-button/80 text-black font-bold px-6 py-3 rounded-lg transition-all shadow-lg hover:shadow-beast-button/30 flex items-center gap-2"
+            >
+              🚀 Run Brute Force
+            </button>
+          ) : (
+            <button
+              onClick={handleStop}
+              className="bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-3 rounded-lg transition-all shadow-lg flex items-center gap-2"
+            >
+              ⏹ Stop
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Progress Bar */}
+      {isRunning && progress && (
+        <div className="mb-6">
+          <div className="flex justify-between text-xs text-gray-400 mb-1">
+            <span>Processing... {progress.count.toLocaleString()} / {progress.total.toLocaleString()}</span>
+            <span>{progress.resultsFound} matches found</span>
+          </div>
+          <div className="w-full bg-gray-900 rounded-full h-3 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-beast-button to-yellow-300 rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Results */}
+      {results && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-bold text-gray-200">
+              ✅ Results ({results.validResults.length.toLocaleString()} matches)
+            </h3>
+            <span className="text-xs text-gray-500">
+              Processed {results.totalProcessed.toLocaleString()} combos
+              {results.stoppedByLimit && ' ⚠️ (hit safety limit)'}
+            </span>
+          </div>
+
+          {results.stoppedByLimit && (
+            <div className="bg-yellow-900/30 border border-yellow-700/50 rounded-lg p-3 mb-3 text-sm text-yellow-400 flex items-center gap-2">
+              ⚠️ Safety limit reached! Lock more rows with known cities to reduce combinations.
+            </div>
+          )}
+
+          {results.validResults.length === 0 ? (
+            <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 text-center text-gray-500">
+              No phrases matched your keywords. Try different keywords or lock more rows.
+            </div>
+          ) : (
+            <div className="bg-gray-900 border border-gray-700 rounded-lg max-h-96 overflow-y-auto">
+              {results.validResults.slice(0, 500).map((phrase, i) => (
+                <div
+                  key={i}
+                  className="px-4 py-2 border-b border-gray-800 font-mono text-sm text-green-300 hover:bg-gray-800/50 transition-colors flex items-center gap-3"
+                >
+                  <span className="text-xs text-gray-600 w-8 shrink-0">#{i + 1}</span>
+                  <span className="break-all">{phrase}</span>
+                </div>
+              ))}
+              {results.validResults.length > 500 && (
+                <div className="px-4 py-3 text-center text-gray-500 text-sm">
+                  ... and {(results.validResults.length - 500).toLocaleString()} more
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
