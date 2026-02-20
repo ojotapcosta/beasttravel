@@ -1,38 +1,44 @@
-const { useState, useMemo } = React;
+const { useState, useMemo, useEffect } = React;
 
 function matchRowToCity(row, cityObj) {
-  if (row.blocks.length !== cityObj.words.length) return false;
-
+  let letterCount = 0;
   for (let b = 0; b < row.blocks.length; b++) {
-    const block = row.blocks[b];
-    const word = cityObj.words[b];
-    if (block.length !== word.length) return false;
-
-    for (let c = 0; c < block.length; c++) {
-      const item = block[c];
-      const char = word[c];
-      if (item.type === 'literal') {
-        if (char !== item.value) return false;
-      } else {
-        if (!/^[A-Z]$/.test(char)) return false;
+    for (let c = 0; c < row.blocks[b].length; c++) {
+      if (row.blocks[b][c].type === 'square' || row.blocks[b][c].type === 'icon') {
+        letterCount++;
       }
     }
   }
-  return true;
+
+  return letterCount === cityObj.cityOnly.length || letterCount === cityObj.lettersFull.length;
 }
 
 function getVehicleInfo(row, cityObj) {
-  let charIndex = 0;
+  if (!cityObj) return null;
+  let letterCount = 0;
+  for (let b = 0; b < row.blocks.length; b++) {
+    for (let c = 0; c < row.blocks[b].length; c++) {
+      if (row.blocks[b][c].type === 'square' || row.blocks[b][c].type === 'icon') {
+        letterCount++;
+      }
+    }
+  }
+
+  const targetLetters = (letterCount === cityObj.cityOnly.length) ? cityObj.cityOnly : cityObj.lettersFull;
+
+  let letterIdx = 0;
   for (let b = 0; b < row.blocks.length; b++) {
     for (let c = 0; c < row.blocks[b].length; c++) {
       const item = row.blocks[b][c];
       if (item.type === 'icon') {
         return {
           type: item.name,
-          letter: cityObj ? cityObj.chars[charIndex] : ''
+          letter: targetLetters[letterIdx] || ''
         };
       }
-      charIndex++;
+      if (item.type === 'square' || item.type === 'icon') {
+        letterIdx++;
+      }
     }
   }
   return null;
@@ -50,10 +56,10 @@ function App() {
   const processedCities = useMemo(() => {
     return cities.map(city => {
       const normalized = city.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-      const noCommas = normalized.replace(/,/g, ' ');
-      const words = noCommas.trim().split(/\s+/);
-      const chars = words.join('');
-      return { id: city, name: city, words, chars };
+      const parts = normalized.split(',');
+      const cityOnly = parts[0].replace(/[^A-Z]/g, '');
+      const lettersFull = normalized.replace(/[^A-Z]/g, '');
+      return { id: city, name: city, cityOnly, lettersFull };
     });
   }, []);
 
@@ -62,7 +68,7 @@ function App() {
     puzzleRows.forEach((row, index) => {
       const initialMatches = processedCities.filter(c => matchRowToCity(row, c));
       if (initialMatches.length === 1) {
-        init[index] = initialMatches[0].id;
+        init[index] = initialMatches[0].id; // Auto-select single matches
       }
     });
     return init;
@@ -182,7 +188,6 @@ function App() {
 
 function PuzzleRow({ row, index, processedCities, selected, selections, onSelect }) {
   const matches = useMemo(() => {
-    // A city is a match if it fits the row AND (it is the current selection OR it hasn't been selected anywhere else)
     const selectedValues = Object.values(selections);
     return processedCities.filter(c => {
       const fitsFormat = matchRowToCity(row, c);
@@ -195,6 +200,15 @@ function PuzzleRow({ row, index, processedCities, selected, selections, onSelect
     return processedCities.find(c => c.id === selected);
   }, [selected, processedCities]);
 
+  const targetLetters = useMemo(() => {
+    if (!selectedCityObj) return '';
+    let rowLetterCount = 0;
+    row.blocks.forEach(b => b.forEach(i => {
+      if (i.type === 'square' || i.type === 'icon') rowLetterCount++;
+    }));
+    return (rowLetterCount === selectedCityObj.cityOnly.length) ? selectedCityObj.cityOnly : selectedCityObj.lettersFull;
+  }, [selectedCityObj, row]);
+
   return (
     <div className="bg-beast-800 border border-gray-700 rounded-xl p-6 shadow-xl hover:border-beast-button/50 transition duration-300 group">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -204,52 +218,44 @@ function PuzzleRow({ row, index, processedCities, selected, selections, onSelect
           <div className="flex items-center gap-3 text-sm font-medium text-gray-400 mb-4">
             <span className="bg-gray-700 px-2 py-1 rounded text-white shadow">Row {index + 1}</span>
             <div className="flex gap-2 text-gray-400 font-mono bg-gray-900/50 px-3 py-1 rounded">
-              Structure: {row.blocks.map(b => b.length).join(' • ')}
+              Structure: {row.blocks.map(b => {
+                let count = 0;
+                b.forEach(i => { if (i.type === 'square' || i.type === 'icon') count++; });
+                return count;
+              }).join(' • ')} letters
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-4 text-xl relative">
-            {row.blocks.map((block, bIdx) => (
-              <div key={bIdx} className="flex gap-1 items-end">
-                {block.map((item, cIdx) => {
-                  let charIndex = 0;
-                  let currentB = 0;
-                  let currentC = 0;
-                  let found = false;
-                  while (!found && currentB < row.blocks.length) {
-                    if (currentB === bIdx && currentC === cIdx) {
-                      found = true;
-                      break;
+            {(() => {
+              let letterIdx = 0;
+              return row.blocks.map((block, bIdx) => (
+                <div key={bIdx} className="flex gap-1 items-end">
+                  {block.map((item, cIdx) => {
+                    if (item.type === 'literal') {
+                      return (
+                        <span key={cIdx} className="text-gray-400 font-bold px-1 mb-1">{item.value}</span>
+                      );
                     }
-                    charIndex++;
-                    currentC++;
-                    if (currentC >= row.blocks[currentB].length) {
-                      currentC = 0;
-                      currentB++;
+
+                    const char = targetLetters ? targetLetters[letterIdx] : '';
+                    letterIdx++; // Only increment for letters
+
+                    if (item.type === 'square') {
+                      return (
+                        <div key={cIdx} className="w-8 h-8 bg-gray-200 border-b-2 border-gray-400 shadow-sm rounded-sm flex items-center justify-center text-beast-900 font-bold text-lg">
+                          {char}
+                        </div>
+                      );
                     }
-                  }
-
-                  const char = selectedCityObj ? selectedCityObj.chars[charIndex] : '';
-
-                  if (item.type === 'literal') {
-                    return (
-                      <span key={cIdx} className="text-gray-400 font-bold px-1 mb-1">{item.value}</span>
-                    );
-                  }
-                  if (item.type === 'square') {
-                    return (
-                      <div key={cIdx} className="w-8 h-8 bg-gray-200 border-b-2 border-gray-400 shadow-sm rounded-sm flex items-center justify-center text-beast-900 font-bold text-lg">
-                        {char}
-                      </div>
-                    );
-                  }
-                  if (item.type === 'icon') {
-                    return <VehicleSquare key={cIdx} type={item.name} letter={char} />;
-                  }
-                  return null;
-                })}
-              </div>
-            ))}
+                    if (item.type === 'icon') {
+                      return <VehicleSquare key={cIdx} type={item.name} letter={char} />;
+                    }
+                    return null;
+                  })}
+                </div>
+              ));
+            })()}
           </div>
         </div>
 
