@@ -1,31 +1,39 @@
 const { useState, useMemo, useEffect } = React;
 
-function matchRowToCity(row, cityObj) {
-  let letterCount = 0;
-  for (let b = 0; b < row.blocks.length; b++) {
-    for (let c = 0; c < row.blocks[b].length; c++) {
-      if (row.blocks[b][c].type === 'square' || row.blocks[b][c].type === 'icon') {
-        letterCount++;
+function matchesBlockStructure(wordLengths, blockLengths) {
+  let wIndex = 0;
+  for (let b = 0; b < blockLengths.length; b++) {
+    let currentSum = 0;
+    let foundMatch = false;
+    while (wIndex < wordLengths.length) {
+      currentSum += wordLengths[wIndex];
+      wIndex++;
+      if (currentSum === blockLengths[b]) {
+        foundMatch = true;
+        break;
+      } else if (currentSum > blockLengths[b]) {
+        return false;
       }
     }
+    if (!foundMatch) return false;
   }
+  return wIndex === wordLengths.length;
+}
 
-  return letterCount === cityObj.cityOnly.length || letterCount === cityObj.lettersFull.length;
+function matchRowToCity(row, cityObj) {
+  const blockLengths = row.blocks.map(block => {
+    let count = 0;
+    block.forEach(item => {
+      if (item.type === 'square' || item.type === 'icon') count++;
+    });
+    return count;
+  });
+
+  return matchesBlockStructure(cityObj.wordLetterCounts, blockLengths);
 }
 
 function getVehicleInfo(row, cityObj) {
   if (!cityObj) return null;
-  let letterCount = 0;
-  for (let b = 0; b < row.blocks.length; b++) {
-    for (let c = 0; c < row.blocks[b].length; c++) {
-      if (row.blocks[b][c].type === 'square' || row.blocks[b][c].type === 'icon') {
-        letterCount++;
-      }
-    }
-  }
-
-  const targetLetters = (letterCount === cityObj.cityOnly.length) ? cityObj.cityOnly : cityObj.lettersFull;
-
   let letterIdx = 0;
   for (let b = 0; b < row.blocks.length; b++) {
     for (let c = 0; c < row.blocks[b].length; c++) {
@@ -33,7 +41,7 @@ function getVehicleInfo(row, cityObj) {
       if (item.type === 'icon') {
         return {
           type: item.name,
-          letter: targetLetters[letterIdx] || ''
+          letter: cityObj.lettersFull[letterIdx] || ''
         };
       }
       if (item.type === 'square' || item.type === 'icon') {
@@ -56,10 +64,10 @@ function App() {
   const processedCities = useMemo(() => {
     return cities.map(city => {
       const normalized = city.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-      const parts = normalized.split(',');
-      const cityOnly = parts[0].replace(/[^A-Z]/g, '');
-      const lettersFull = normalized.replace(/[^A-Z]/g, '');
-      return { id: city, name: city, cityOnly, lettersFull };
+      const wordsRaw = normalized.split(/[^A-Z]+/);
+      const wordLetterCounts = wordsRaw.filter(w => w.length > 0).map(w => w.length);
+      const lettersFull = wordsRaw.filter(w => w.length > 0).join('');
+      return { id: city, name: city, wordLetterCounts, lettersFull };
     });
   }, []);
 
@@ -68,7 +76,7 @@ function App() {
     puzzleRows.forEach((row, index) => {
       const initialMatches = processedCities.filter(c => matchRowToCity(row, c));
       if (initialMatches.length === 1) {
-        init[index] = initialMatches[0].id; // Auto-select single matches
+        init[index] = initialMatches[0].id;
       }
     });
     return init;
@@ -200,14 +208,7 @@ function PuzzleRow({ row, index, processedCities, selected, selections, onSelect
     return processedCities.find(c => c.id === selected);
   }, [selected, processedCities]);
 
-  const targetLetters = useMemo(() => {
-    if (!selectedCityObj) return '';
-    let rowLetterCount = 0;
-    row.blocks.forEach(b => b.forEach(i => {
-      if (i.type === 'square' || i.type === 'icon') rowLetterCount++;
-    }));
-    return (rowLetterCount === selectedCityObj.cityOnly.length) ? selectedCityObj.cityOnly : selectedCityObj.lettersFull;
-  }, [selectedCityObj, row]);
+  const targetLetters = selectedCityObj ? selectedCityObj.lettersFull : '';
 
   return (
     <div className="bg-beast-800 border border-gray-700 rounded-xl p-6 shadow-xl hover:border-beast-button/50 transition duration-300 group">
@@ -239,7 +240,7 @@ function PuzzleRow({ row, index, processedCities, selected, selections, onSelect
                     }
 
                     const char = targetLetters ? targetLetters[letterIdx] : '';
-                    letterIdx++; // Only increment for letters
+                    letterIdx++;
 
                     if (item.type === 'square') {
                       return (
