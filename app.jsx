@@ -39,16 +39,9 @@ function getVehicleInfo(row, cityObj) {
 }
 
 function VehicleSquare({ type, letter }) {
-  const path = `https://beast.travel/wp-content/uploads/2026/02/${type}-Small.png`;
   return (
-    <div className="relative w-10 h-10 mt-1 mb-1 mx-1 bg-yellow-100 border-2 border-yellow-500 shadow-[0_0_12px_rgba(234,179,8,0.5)] rounded-md flex shrink-0 items-center justify-center text-beast-900 font-extrabold text-xl cursor-default">
+    <div className="relative w-10 h-10 mt-1 mb-1 mx-1 bg-yellow-100 border-2 border-yellow-500 shadow-[0_0_12px_rgba(234,179,8,0.5)] rounded-md flex shrink-0 items-center justify-center text-beast-900 font-extrabold text-xl cursor-default" title={type}>
       {letter}
-      <img
-        src={path}
-        className="absolute -top-3 -right-3 w-8 h-8 object-contain drop-shadow bg-beast-900/80 rounded border border-gray-600 p-0.5 backdrop-blur-sm"
-        alt={type}
-        onError={(e) => { e.target.style.display = 'none'; }}
-      />
     </div>
   );
 }
