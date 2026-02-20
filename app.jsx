@@ -7,8 +7,8 @@ function App() {
       const parts = city.split(',');
       const leftRaw = parts[0].trim();
       const rightRaw = parts.slice(1).join(',').trim();
-      const leftLetters = leftRaw.replace(/[^A-Za-z]/g, '').toUpperCase();
-      const rightLetters = rightRaw.replace(/[^A-Za-z]/g, '').toUpperCase();
+      const leftLetters = leftRaw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z]/g, '').toUpperCase();
+      const rightLetters = rightRaw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z]/g, '').toUpperCase();
       const leftLen = leftLetters.length;
       const rightLen = rightLetters.length;
       return { id: city, name: city, leftLen, rightLen, leftLetters, rightLetters };
