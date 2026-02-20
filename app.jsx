@@ -21,6 +21,38 @@ function matchRowToCity(row, cityObj) {
   return true;
 }
 
+function getVehicleInfo(row, cityObj) {
+  let charIndex = 0;
+  for (let b = 0; b < row.blocks.length; b++) {
+    for (let c = 0; c < row.blocks[b].length; c++) {
+      const item = row.blocks[b][c];
+      if (item.type === 'icon') {
+        return {
+          type: item.name,
+          letter: cityObj ? cityObj.chars[charIndex] : ''
+        };
+      }
+      charIndex++;
+    }
+  }
+  return null;
+}
+
+function VehicleSquare({ type, letter }) {
+  const path = `https://beast.travel/wp-content/uploads/2026/02/${type}-Small.png`;
+  return (
+    <div className="relative w-10 h-10 mt-1 mb-1 mx-1 bg-yellow-100 border-2 border-yellow-500 shadow-[0_0_12px_rgba(234,179,8,0.5)] rounded-md flex shrink-0 items-center justify-center text-beast-900 font-extrabold text-xl cursor-default">
+      {letter}
+      <img
+        src={path}
+        className="absolute -top-3 -right-3 w-8 h-8 object-contain drop-shadow bg-beast-900/80 rounded border border-gray-600 p-0.5 backdrop-blur-sm"
+        alt={type}
+        onError={(e) => { e.target.style.display = 'none'; }}
+      />
+    </div>
+  );
+}
+
 function App() {
   const processedCities = useMemo(() => {
     return cities.map(city => {
@@ -31,6 +63,25 @@ function App() {
       return { id: city, name: city, words, chars };
     });
   }, []);
+
+  const [selections, setSelections] = useState(() => {
+    const init = {};
+    puzzleRows.forEach((row, index) => {
+      const initialMatches = processedCities.filter(c => matchRowToCity(row, c));
+      if (initialMatches.length === 1) {
+        init[index] = initialMatches[0].id;
+      }
+    });
+    return init;
+  });
+
+  const vehicles = useMemo(() => {
+    return puzzleRows.map((row, index) => {
+      const selectedId = selections[index];
+      const cityObj = selectedId ? processedCities.find(c => c.id === selectedId) : null;
+      return getVehicleInfo(row, cityObj);
+    }).filter(Boolean);
+  }, [selections, processedCities]);
 
   const matchedCityIds = useMemo(() => {
     const matched = new Set();
@@ -53,6 +104,54 @@ function App() {
       <header className="mb-12 text-center">
       </header>
 
+      {/* Decoded Phrases Section */}
+      <div className="mb-12 space-y-8 bg-beast-800 p-8 rounded-xl border border-gray-700 shadow-2xl">
+        <div>
+          <h2 className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-4 border-b border-gray-700 pb-2 flex items-center gap-2">
+            <span>✨</span> All Vehicles (Full Phrase)
+          </h2>
+          <div className="flex flex-wrap gap-2 mt-4">
+            {vehicles.map((v, i) => <VehicleSquare key={i} type={v.type} letter={v.letter} />)}
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-4 border-b border-gray-700 pb-2 flex items-center gap-2">
+            <span>🚗</span> Cars Only
+          </h2>
+          <div className="flex flex-wrap gap-2 mt-4">
+            {vehicles.filter(v => v.type === 'Car').map((v, i) => <VehicleSquare key={i} type={v.type} letter={v.letter} />)}
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-4 border-b border-gray-700 pb-2 flex items-center gap-2">
+            <span>🐎</span> Horses Only
+          </h2>
+          <div className="flex flex-wrap gap-2 mt-4">
+            {vehicles.filter(v => v.type === 'Horse').map((v, i) => <VehicleSquare key={i} type={v.type} letter={v.letter} />)}
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-4 border-b border-gray-700 pb-2 flex items-center gap-2">
+            <span>✈️</span> Planes Only
+          </h2>
+          <div className="flex flex-wrap gap-2 mt-4">
+            {vehicles.filter(v => v.type === 'Plane').map((v, i) => <VehicleSquare key={i} type={v.type} letter={v.letter} />)}
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-4 border-b border-gray-700 pb-2 flex items-center gap-2">
+            <span>⛴️</span> Boats Only
+          </h2>
+          <div className="flex flex-wrap gap-2 mt-4">
+            {vehicles.filter(v => v.type === 'Boat').map((v, i) => <VehicleSquare key={i} type={v.type} letter={v.letter} />)}
+          </div>
+        </div>
+      </div>
+
       <div className="space-y-6">
         {puzzleRows.map((row, index) => (
           <PuzzleRow
@@ -60,6 +159,8 @@ function App() {
             row={row}
             index={index}
             processedCities={processedCities}
+            selected={selections[index] || ''}
+            onSelect={(val) => setSelections(s => ({ ...s, [index]: val }))}
           />
         ))}
       </div>
@@ -85,9 +186,7 @@ function App() {
   );
 }
 
-function PuzzleRow({ row, index, processedCities }) {
-  const [selected, setSelected] = useState('');
-
+function PuzzleRow({ row, index, processedCities, selected, onSelect }) {
   const matches = useMemo(() => {
     return processedCities.filter(c => matchRowToCity(row, c));
   }, [processedCities, row]);
@@ -145,19 +244,7 @@ function PuzzleRow({ row, index, processedCities }) {
                     );
                   }
                   if (item.type === 'icon') {
-                    const imgName = item.name;
-                    const path = `https://beast.travel/wp-content/uploads/2026/02/${imgName}-Small.png`;
-                    return (
-                      <div key={cIdx} className="relative w-10 h-10 mt-1 mb-1 mx-1 bg-yellow-100 border-2 border-yellow-500 shadow-[0_0_12px_rgba(234,179,8,0.5)] rounded-md flex items-center justify-center text-beast-900 font-extrabold text-xl">
-                        {char}
-                        <img
-                          src={path}
-                          className="absolute -top-3 -right-3 w-8 h-8 object-contain drop-shadow bg-beast-900/80 rounded border border-gray-600 p-0.5 backdrop-blur-sm"
-                          alt={imgName}
-                          onError={(e) => { e.target.style.display = 'none'; }}
-                        />
-                      </div>
-                    );
+                    return <VehicleSquare key={cIdx} type={item.name} letter={char} />;
                   }
                   return null;
                 })}
@@ -177,7 +264,7 @@ function PuzzleRow({ row, index, processedCities }) {
               <select
                 className="w-full appearance-none bg-gray-900 border border-gray-700 text-white rounded-lg px-4 py-3 pr-10 focus:outline-none focus:ring-2 focus:ring-beast-button focus:border-transparent transition shadow-inner"
                 value={selected}
-                onChange={(e) => setSelected(e.target.value)}
+                onChange={(e) => onSelect(e.target.value)}
               >
                 <option value="" disabled>Select a perfect match ({matches.length})</option>
                 {matches.map(m => (
