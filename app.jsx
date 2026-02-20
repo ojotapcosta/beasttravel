@@ -7,11 +7,35 @@ function App() {
       const parts = city.split(',');
       const leftRaw = parts[0].trim();
       const rightRaw = parts.slice(1).join(',').trim();
-      const leftLen = leftRaw.replace(/[^A-Za-z]/g, '').length;
-      const rightLen = rightRaw.replace(/[^A-Za-z]/g, '').length;
-      return { id: city, name: city, leftLen, rightLen };
+      const leftLetters = leftRaw.replace(/[^A-Za-z]/g, '').toUpperCase();
+      const rightLetters = rightRaw.replace(/[^A-Za-z]/g, '').toUpperCase();
+      const leftLen = leftLetters.length;
+      const rightLen = rightLetters.length;
+      return { id: city, name: city, leftLen, rightLen, leftLetters, rightLetters };
     });
   }, []);
+
+  // Precompute valid square combinations
+  const validSquareCombos = useMemo(() => {
+    const combos = new Set();
+    puzzleRows.forEach(row => {
+      let left = 0, right = 0;
+      let iconFound = false;
+      row.forEach(item => {
+        if (item.type === 'icon') iconFound = true;
+        else if (item.type === 'squares') {
+          if (!iconFound) left += item.count;
+          else right += item.count;
+        }
+      });
+      combos.add(`${left},${right}`);
+    });
+    return combos;
+  }, []);
+
+  const unmatchedCities = useMemo(() => {
+    return processedCities.filter(c => !validSquareCombos.has(`${c.leftLen},${c.rightLen}`));
+  }, [processedCities, validSquareCombos]);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
@@ -34,6 +58,24 @@ function App() {
           />
         ))}
       </div>
+
+      {unmatchedCities.length > 0 && (
+        <div className="mt-12 p-8 bg-beast-800 border border-gray-700 rounded-xl shadow-xl">
+          <h2 className="text-2xl font-bold text-gray-200 mb-2 flex items-center gap-2">
+            ⚠️ Unmatched Cities ({unmatchedCities.length})
+          </h2>
+          <p className="text-gray-400 mb-6 text-sm">
+            These cities have letter counts that do not match the required square formats of any puzzle row.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {unmatchedCities.map(c => (
+              <span key={c.id} className="bg-gray-900 border border-gray-700 text-gray-400 px-3 py-1.5 rounded-lg text-xs font-medium">
+                {c.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -62,6 +104,10 @@ function PuzzleRow({ row, index, processedCities }) {
     return processedCities.filter(c => c.leftLen === leftSquares && c.rightLen === rightSquares);
   }, [processedCities, leftSquares, rightSquares]);
 
+  const selectedCityObj = useMemo(() => {
+    return processedCities.find(c => c.id === selected);
+  }, [selected, processedCities]);
+
   return (
     <div className="bg-beast-800 border border-gray-700 rounded-xl p-6 shadow-xl hover:border-beast-button/50 transition duration-300 group">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -80,11 +126,28 @@ function PuzzleRow({ row, index, processedCities }) {
           <div className="flex flex-wrap items-center gap-1.5 text-xl relative">
             {row.map((item, i) => {
               if (item.type === 'squares') {
+                const iconIndex = row.findIndex(r => r.type === 'icon');
+                const isLeft = i < iconIndex;
+                let startingIndex = 0;
+                for (let k = 0; k < i; k++) {
+                  if (row[k].type === 'squares') {
+                    if (isLeft && k < iconIndex) startingIndex += row[k].count;
+                    if (!isLeft && k > iconIndex) startingIndex += row[k].count;
+                  }
+                }
+
                 return (
                   <div key={i} className="flex gap-1">
-                    {Array.from({ length: item.count }).map((_, j) => (
-                      <div key={j} className="w-6 h-6 bg-gray-200 border-b-2 border-gray-400 shadow-sm rounded-sm"></div>
-                    ))}
+                    {Array.from({ length: item.count }).map((_, j) => {
+                      const charIndex = startingIndex + j;
+                      const letters = isLeft ? selectedCityObj?.leftLetters : selectedCityObj?.rightLetters;
+                      const char = letters ? letters[charIndex] : '';
+                      return (
+                        <div key={j} className="w-6 h-6 bg-gray-200 border-b-2 border-gray-400 shadow-sm rounded-sm flex items-center justify-center text-beast-900 font-bold text-sm">
+                          {char}
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               }
