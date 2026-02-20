@@ -1,5 +1,5 @@
 const cities = [
-  "Dumti, India",
+  "Dimtu, Ethiopia",
   "Arzamas, Russia",
   "Baku, Azerbaijan",
   "Surat, India",
