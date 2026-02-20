@@ -1,44 +1,55 @@
 const { useState, useMemo } = React;
 
+function matchRowToCity(row, cityObj) {
+  if (row.blocks.length !== cityObj.words.length) return false;
+
+  for (let b = 0; b < row.blocks.length; b++) {
+    const block = row.blocks[b];
+    const word = cityObj.words[b];
+    if (block.length !== word.length) return false;
+
+    for (let c = 0; c < block.length; c++) {
+      const item = block[c];
+      const char = word[c];
+      if (item.type === 'literal') {
+        if (char !== item.value) return false;
+      } else {
+        if (!/^[A-Z]$/.test(char)) return false;
+      }
+    }
+  }
+  return true;
+}
+
 function App() {
-  // Precompute city lengths
   const processedCities = useMemo(() => {
     return cities.map(city => {
-      const parts = city.split(',');
-      const leftRaw = parts[0].trim();
-      const rightRaw = parts.slice(1).join(',').trim();
-      const leftLetters = leftRaw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z]/g, '').toUpperCase();
-      const rightLetters = rightRaw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z]/g, '').toUpperCase();
-      const leftLen = leftLetters.length;
-      const rightLen = rightLetters.length;
-      return { id: city, name: city, leftLen, rightLen, leftLetters, rightLetters };
+      const normalized = city.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+      const noCommas = normalized.replace(/,/g, ' ');
+      const words = noCommas.trim().split(/\s+/);
+      const chars = words.join('');
+      return { id: city, name: city, words, chars };
     });
   }, []);
 
-  // Precompute valid square combinations
-  const validSquareCombos = useMemo(() => {
-    const combos = new Set();
+  const matchedCityIds = useMemo(() => {
+    const matched = new Set();
     puzzleRows.forEach(row => {
-      let left = 0, right = 0;
-      let iconFound = false;
-      row.forEach(item => {
-        if (item.type === 'icon') iconFound = true;
-        else if (item.type === 'squares') {
-          if (!iconFound) left += item.count;
-          else right += item.count;
+      processedCities.forEach(city => {
+        if (matchRowToCity(row, city)) {
+          matched.add(city.id);
         }
       });
-      combos.add(`${left},${right}`);
     });
-    return combos;
-  }, []);
+    return matched;
+  }, [processedCities]);
 
   const unmatchedCities = useMemo(() => {
-    return processedCities.filter(c => !validSquareCombos.has(`${c.leftLen},${c.rightLen}`));
-  }, [processedCities, validSquareCombos]);
+    return processedCities.filter(c => !matchedCityIds.has(c.id));
+  }, [processedCities, matchedCityIds]);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
+    <div className="max-w-5xl mx-auto px-4 py-12">
       <header className="mb-12 text-center">
       </header>
 
@@ -59,7 +70,7 @@ function App() {
             ⚠️ Unmatched Cities ({unmatchedCities.length})
           </h2>
           <p className="text-gray-400 mb-6 text-sm">
-            These cities have letter counts that do not match the required square formats of any puzzle row.
+            These cities do not fit any of the puzzle formats exactly.
           </p>
           <div className="flex flex-wrap gap-2">
             {unmatchedCities.map(c => (
@@ -77,26 +88,9 @@ function App() {
 function PuzzleRow({ row, index, processedCities }) {
   const [selected, setSelected] = useState('');
 
-  // Calculate required blank counts
-  let leftSquares = 0;
-  let rightSquares = 0;
-  let iconName = '';
-  let iconFound = false;
-
-  row.forEach(item => {
-    if (item.type === 'icon') {
-      iconFound = true;
-      iconName = item.name;
-    } else if (item.type === 'squares') {
-      if (!iconFound) leftSquares += item.count;
-      else rightSquares += item.count;
-    }
-  });
-
-  // Find exact matches
   const matches = useMemo(() => {
-    return processedCities.filter(c => c.leftLen === leftSquares && c.rightLen === rightSquares);
-  }, [processedCities, leftSquares, rightSquares]);
+    return processedCities.filter(c => matchRowToCity(row, c));
+  }, [processedCities, row]);
 
   const selectedCityObj = useMemo(() => {
     return processedCities.find(c => c.id === selected);
@@ -108,62 +102,67 @@ function PuzzleRow({ row, index, processedCities }) {
 
         {/* Left Side: The Puzzle Visual */}
         <div className="flex-1">
-          <div className="flex items-center gap-3 text-sm font-medium text-gray-400 mb-3">
+          <div className="flex items-center gap-3 text-sm font-medium text-gray-400 mb-4">
             <span className="bg-gray-700 px-2 py-1 rounded text-white shadow">Row {index + 1}</span>
-            <span>{leftSquares} squares</span>
-            <span className="w-1 h-1 bg-gray-600 rounded-full"></span>
-            <span className="text-gray-300">{iconName || 'Unknown Transport'}</span>
-            <span className="w-1 h-1 bg-gray-600 rounded-full"></span>
-            <span>{rightSquares} squares</span>
+            <div className="flex gap-2 text-gray-400 font-mono bg-gray-900/50 px-3 py-1 rounded">
+              Structure: {row.blocks.map(b => b.length).join(' • ')}
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5 text-xl relative">
-            {row.map((item, i) => {
-              if (item.type === 'squares') {
-                const iconIndex = row.findIndex(r => r.type === 'icon');
-                const isLeft = i < iconIndex;
-                let startingIndex = 0;
-                for (let k = 0; k < i; k++) {
-                  if (row[k].type === 'squares') {
-                    if (isLeft && k < iconIndex) startingIndex += row[k].count;
-                    if (!isLeft && k > iconIndex) startingIndex += row[k].count;
+          <div className="flex flex-wrap items-center gap-4 text-xl relative">
+            {row.blocks.map((block, bIdx) => (
+              <div key={bIdx} className="flex gap-1 items-end">
+                {block.map((item, cIdx) => {
+                  let charIndex = 0;
+                  let currentB = 0;
+                  let currentC = 0;
+                  let found = false;
+                  while (!found && currentB < row.blocks.length) {
+                    if (currentB === bIdx && currentC === cIdx) {
+                      found = true;
+                      break;
+                    }
+                    charIndex++;
+                    currentC++;
+                    if (currentC >= row.blocks[currentB].length) {
+                      currentC = 0;
+                      currentB++;
+                    }
                   }
-                }
 
-                return (
-                  <div key={i} className="flex gap-1">
-                    {Array.from({ length: item.count }).map((_, j) => {
-                      const charIndex = startingIndex + j;
-                      const letters = isLeft ? selectedCityObj?.leftLetters : selectedCityObj?.rightLetters;
-                      const char = letters ? letters[charIndex] : '';
-                      return (
-                        <div key={j} className="w-6 h-6 bg-gray-200 border-b-2 border-gray-400 shadow-sm rounded-sm flex items-center justify-center text-beast-900 font-bold text-sm">
-                          {char}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              }
-              if (item.type === 'icon') {
-                const imgName = item.name.replace(' ', '-');
-                const path = `https://beast.travel/wp-content/uploads/2026/02/${imgName}-Small.png`;
-                // Some logic to handle missing/special images based on previous scraped data
-                const finalPath = path.replace('Small', item.name.includes('Boat') && !item.name.includes('Purple') && !item.name.includes('Brown') && !item.name.includes('Silver') ? 'Small2' : 'Small');
+                  const char = selectedCityObj ? selectedCityObj.chars[charIndex] : '';
 
-                return (
-                  <div key={i} className="px-3">
-                    <img
-                      src={`https://beast.travel/wp-content/uploads/2026/02/${item.name.replace(' ', '-')}-Small${item.name.includes('Green Boat') || item.name.includes('Gold Boat') ? '2' : ''}.png`}
-                      alt={item.name}
-                      className="h-10 object-contain drop-shadow-md"
-                      onError={(e) => { e.target.src = 'https://via.placeholder.com/40?text=Icon' }}
-                    />
-                  </div>
-                );
-              }
-              return null;
-            })}
+                  if (item.type === 'literal') {
+                    return (
+                      <span key={cIdx} className="text-gray-400 font-bold px-1 mb-1">{item.value}</span>
+                    );
+                  }
+                  if (item.type === 'square') {
+                    return (
+                      <div key={cIdx} className="w-8 h-8 bg-gray-200 border-b-2 border-gray-400 shadow-sm rounded-sm flex items-center justify-center text-beast-900 font-bold text-lg">
+                        {char}
+                      </div>
+                    );
+                  }
+                  if (item.type === 'icon') {
+                    const imgName = item.name;
+                    const path = `https://beast.travel/wp-content/uploads/2026/02/${imgName}-Small.png`;
+                    return (
+                      <div key={cIdx} className="relative w-10 h-10 mt-1 mb-1 mx-1 bg-yellow-100 border-2 border-yellow-500 shadow-[0_0_12px_rgba(234,179,8,0.5)] rounded-md flex items-center justify-center text-beast-900 font-extrabold text-xl">
+                        {char}
+                        <img
+                          src={path}
+                          className="absolute -top-3 -right-3 w-8 h-8 object-contain drop-shadow bg-beast-900/80 rounded border border-gray-600 p-0.5 backdrop-blur-sm"
+                          alt={imgName}
+                          onError={(e) => { e.target.style.display = 'none'; }}
+                        />
+                      </div>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+            ))}
           </div>
         </div>
 
