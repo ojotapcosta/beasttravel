@@ -8,7 +8,7 @@ const cities = [
   "Copenhagen, Denmark",
   "DeKalb, Illinois",
   "Dimtu, Ethiopia",
-  "Divo, Ivory Coast",
+  "Divo, Côte d'Ivoire",
   "Eyjafjallajökull, Iceland",
   "Georgetown, Ascension Island",
   "Heard Island, Australia",
