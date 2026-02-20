@@ -40,12 +40,6 @@ function App() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
       <header className="mb-12 text-center">
-        <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-beast-button to-orange-400 mb-4 tracking-tight">
-          Beast Travel Solver
-        </h1>
-        <p className="text-gray-400 text-lg">
-          Match the 91 puzzle rows against the 154 possible destinations extracted from the write-up.
-        </p>
       </header>
 
       <div className="space-y-6">
