@@ -28,7 +28,7 @@ const cities = [
   "Seoul, South Korea",
   "Tampa, Florida",
   "Tashkent, Uzbekistan",
-  "Tierra del Fuego, Argentina/Chile",
+  "Tierra del Fuego",
   "Tijuana, Mexico",
   "Toad Suck, Arkansas",
   "Upper Hutt, New Zealand",
