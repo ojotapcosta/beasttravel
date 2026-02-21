@@ -120,13 +120,13 @@ function App() {
       14: 'Baku, Azerbaijan',              // Row 15 → I
       // Row 16: unknown → R
       // Row 17: unknown → S
-      // Row 18: unknown → T
+      17: 'Cairo, Egypt',                  // Row 18 → T
       18: 'Pune, India',                   // Row 19 → P
       19: 'Buffalo, New York',             // Row 20 → A
       20: 'Tierra del Fuego',              // Row 21 → R
       21: "Divo, Côte d'Ivoire",           // Row 22 → T
       22: 'Nome, Alaska',                  // Row 23 → S
-      // Row 24: unknown → T
+      23: 'Tallinn, Estonia',              // Row 24 → T
       24: 'Surat, India',                  // Row 25 → I
       25: "L'Ascension, Québec",           // Row 26 → C
       26: 'Antalya, Turkey',               // Row 27 → K
@@ -139,24 +139,46 @@ function App() {
       33: 'Lima, Peru',                    // Row 34 → R
       // Row 35: unknown → E
       35: 'Algiers, Algeria',             // Row 36 → S
-      // Rows 37-42: unknown
+      // Rows 37-38: unknown
+      38: 'Quito, Ecuador',               // Row 39 → T
+      39: 'Arles, France',                // Row 40 → S
+      40: 'Istanbul, Turkey',             // Row 41 → I
+      41: 'Manaus, Brazil',               // Row 42 → N
       42: 'Visby, Sweden',                 // Row 43 → B
-      // Rows 44-52: unknown
+      // Rows 44-45: unknown
+      45: 'Christchurch, New Zealand',    // Row 46 → H
+      // Rows 47-48: unknown
+      48: 'Velingrad, Bulgaria',           // Row 49 → N
+      49: 'Casablanca, Morocco',           // Row 50 → A
+      // Row 51: unknown
+      51: 'Ankara, Turkey',               // Row 52 → G
       52: 'Castelo Branco, Portugal',      // Row 53 → G
-      // Rows 54-72: unknown
+      // Rows 54-55: unknown
+      55: 'Edmonton, Alberta',             // Row 56 → E
+      // Row 57: unknown
+      57: 'Kupang, Indonesia',             // Row 58 → N
+      58: 'Orlando, Florida',              // Row 59 → S
+      59: 'Lahore, Pakistan',              // Row 60 → W
+      // Rows 61-64: unknown
+      64: 'Thane, India',                  // Row 65 → E
+      // Rows 66-68: unknown
+      68: 'Vladivostok, Russia',           // Row 69 → T
+      // Row 70: unknown
+      70: 'Toad Suck, Arkansas',           // Row 71 → S
+      // Row 72: unknown
       72: 'Saint-Pierre',                  // Row 73 → P
       // Row 74: unknown → A
       // Row 75: unknown → R
       // Row 76: unknown → T
       76: 'České Budějovice, Czechia',     // Row 77 → H
       // Row 78: unknown → E
-      // Row 79: unknown → S
+      78: 'Moscow, Russia',                // Row 79 → S
       79: 'Curicó, Chile',                 // Row 80 → H
       80: 'Copenhagen, Denmark',           // Row 81 → O
       81: 'Okato, New Zealand',            // Row 82 → W
       // Row 83: unknown → E
       83: 'Sokodé, Togo',                  // Row 84 → D
-      // Row 85: unknown → A
+      84: 'Accra, Ghana',                  // Row 85 → A
       // Row 86: unknown → T
       86: 'Tashkent, Uzbekistan',          // Row 87 → S
       87: 'Dimtu, Ethiopia',               // Row 88 → T
@@ -171,12 +193,15 @@ function App() {
     });
 
     // Rows where auto-match is known to be wrong — do NOT auto-select
-    const skipRows = new Set([31]); // 0-indexed: Row 32 (Derby is wrong)
+    const skipRows = new Set([31, 62, 65, 75, 85]); // Row 32 (Derby), 63 (Okato), 66 (Velingrad), 76 (Pune), 86 (Christchurch)
 
-    // For remaining rows, auto-select if there's exactly one match
+    // Cities to completely exclude from auto-matching (they match wrong rows)
+    const excludedCities = new Set(['Derby, Australia', 'Okato, New Zealand']);
+
+    // For remaining rows, auto-select if there's exactly one match (excluding bad cities)
     puzzleRows.forEach((row, index) => {
       if (init[index] || skipRows.has(index)) return;
-      const initialMatches = processedCities.filter(c => matchRowToCity(row, c));
+      const initialMatches = processedCities.filter(c => matchRowToCity(row, c) && !excludedCities.has(c.id));
       if (initialMatches.length === 1) {
         init[index] = initialMatches[0].id;
       }
@@ -184,6 +209,14 @@ function App() {
 
     return init;
   });
+
+  // Cities that are explicitly excluded from dropdowns (wrong auto-matches)
+  const excludedFromDropdowns = useMemo(() => new Set([
+    'Derby, Australia',           // Not row 32
+    'Okato, New Zealand',         // Not row 63
+    // Velingrad → now locked to row 49
+    // Christchurch → now locked to row 46
+  ]), []);
 
   const vehicles = useMemo(() => {
     const selectedValues = Object.values(selections);
@@ -201,11 +234,12 @@ function App() {
 
       let options = [];
       if (!selectedId && type !== "Unknown") {
-        // Find possible valid matches for this row
+        // Find possible valid matches — exclude already-taken AND excluded cities
         const validCitiesForRow = processedCities.filter(c => {
           const fitsFormat = matchRowToCity(row, c);
           const isAlreadyTaken = selectedValues.includes(c.id);
-          return fitsFormat && !isAlreadyTaken;
+          const isExcluded = excludedFromDropdowns.has(c.id);
+          return fitsFormat && !isAlreadyTaken && !isExcluded;
         });
 
         // Extract the letter each valid city would produce
@@ -233,7 +267,7 @@ function App() {
         options
       };
     }).filter(v => v.type !== "Unknown");
-  }, [selections, processedCities]);
+  }, [selections, processedCities, excludedFromDropdowns]);
 
   const matchedCityIds = useMemo(() => {
     const matched = new Set();
@@ -248,8 +282,11 @@ function App() {
   }, [processedCities]);
 
   const unmatchedCities = useMemo(() => {
-    return processedCities.filter(c => !matchedCityIds.has(c.id));
-  }, [processedCities, matchedCityIds]);
+    const selectedSet = new Set(Object.values(selections));
+    return processedCities.filter(c =>
+      !selectedSet.has(c.id) && (!matchedCityIds.has(c.id) || excludedFromDropdowns.has(c.id))
+    );
+  }, [processedCities, matchedCityIds, selections, excludedFromDropdowns]);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
