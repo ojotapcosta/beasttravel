@@ -150,20 +150,22 @@ function App() {
       // Rows 47-48: unknown
       48: 'Velingrad, Bulgaria',           // Row 49 → N
       49: 'Casablanca, Morocco',           // Row 50 → A
-      // Row 51: unknown
+      50: 'Maputo, Mozambique',            // Row 51 → T
       51: 'Ankara, Turkey',               // Row 52 → G
       52: 'Castelo Branco, Portugal',      // Row 53 → G
-      // Rows 54-55: unknown
+      // Row 54: unknown
+      54: 'Marrakesh, Morocco',            // Row 55 → O
       55: 'Edmonton, Alberta',             // Row 56 → E
       // Row 57: unknown
       57: 'Kupang, Indonesia',             // Row 58 → N
       58: 'Orlando, Florida',              // Row 59 → S
       59: 'Lahore, Pakistan',              // Row 60 → W
-      // Rows 61-64: unknown
+      60: 'Monkey Bay, Malawi',            // Row 61 → W
+      // Rows 62-64: unknown
       64: 'Thane, India',                  // Row 65 → E
       // Rows 66-68: unknown
       68: 'Vladivostok, Russia',           // Row 69 → T
-      // Row 70: unknown
+      69: 'DeKalb, Illinois',              // Row 70 → A
       70: 'Toad Suck, Arkansas',           // Row 71 → S
       // Row 72: unknown
       72: 'Saint-Pierre',                  // Row 73 → P
@@ -171,7 +173,7 @@ function App() {
       // Row 75: unknown → R
       // Row 76: unknown → T
       76: 'České Budějovice, Czechia',     // Row 77 → H
-      // Row 78: unknown → E
+      77: 'Yellowknife, Northwest Territories', // Row 78 → E
       78: 'Moscow, Russia',                // Row 79 → S
       79: 'Curicó, Chile',                 // Row 80 → H
       80: 'Copenhagen, Denmark',           // Row 81 → O
