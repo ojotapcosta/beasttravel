@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beast Travel - Match Helper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        beast: {
+                            900: '#111827',
+                            800: '#1F2937',
+                            700: '#374151',
+                            button: '#6366f1'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: #0f172a;
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        .glow {
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.15);
+        }
+
+        .row-block {
+            display: inline-flex;
+            gap: 2px;
+            padding: 2px 6px;
+            background: #1e293b;
+            border-radius: 4px;
+            margin: 0 3px;
+            border: 1px solid #334155;
+        }
+
+        .sq {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .sq-letter {
+            background: #374151;
+            color: #9ca3af;
+        }
+
+        .sq-icon {
+            background: #4f46e5;
+            color: #e0e7ff;
+            font-size: 10px;
+        }
+
+        .match-highlight {
+            background: #22c55e20;
+            border-color: #22c55e60 !important;
+        }
+
+        .no-match {
+            opacity: 0.5;
+        }
+    </style>
+</head>
+
+<body class="text-gray-200 min-h-screen">
+    <div id="root"></div>
+
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script src="cities.js?v=41"></script>
+    <script src="rows.js?v=41"></script>
+
+    <script type="text/babel">
+        const { useState, useMemo } = React;
+
+        // ===== City name variants database =====
+        // For each unmatched city, generate possible name spellings
+        const cityVariants = {
+            // US cities: City, State (full)
+            "Tampa, Florida": [
+                "Tampa, Florida",
+                "Tampa, United States",
+            ],
+            // Canada cities: City, Province (full)
+            "Yellowknife, Northwest Territories": [
+                "Yellowknife, Northwest Territories",
+                "Yellowknife, Canada",
+            ],
+            // Other countries: City, Country
+            "Georgetown, Ascension Island": [
+                "Georgetown, Ascension Island",
+                "Georgetown, Saint Helena",
+                "Georgetown, United Kingdom",
+            ],
+            "Possession Island, France": [
+                "Possession Island, France",
+                "Île de la Possession, France",
+                "Possession Island",
+                "Île de la Possession",
+            ],
+            "Iturup, Japan/Russia": [
+                "Iturup, Russia",
+                "Iturup, Japan",
+                "Iturup Island",
+                "Itorofu, Japan",
+                "Etorofu, Japan",
+            ],
+            "Maputo, Mozambique": [
+                "Maputo, Mozambique",
+                "Maputo, Moçambique",
+            ],
+            "Nazaré, Portugal": [
+                "Nazaré, Portugal",
+                "Nazare, Portugal",
+            ],
+            "Cairns, Queensland, Australia": [
+                "Cairns, Queensland, Australia",
+                "Cairns, Queensland",
+                "Cairns, Australia",
+            ],
+            "Seoul, South Korea": [
+                "Seoul, South Korea",
+                "Seoul, Korea",
+            ],
+            "Upper Hutt, New Zealand": [
+                "Upper Hutt, New Zealand",
+            ],
+            "Babylon, Iraq": [
+                "Babylon, Iraq",
+                "Babil, Iraq",
+            ],
+            "Malé, Maldives": [
+                "Malé, Maldives",
+                "Male, Maldives",
+            ],
+            "Qingdao, China": [
+                "Qingdao, China",
+                "Tsingtao, China",
+                "Qīngdǎo, China",
+            ],
+            "Salvador, Brazil": [
+                "Salvador, Brazil",
+                "Salvador, Bahia",
+                "Salvador, Brasil",
+                "São Salvador da Bahia de Todos os Santos",
+            ],
+            "José de San Martín, Argentina": [
+                "José de San Martín, Argentina",
+                "Jose de San Martin, Argentina",
+                "San Martín, Argentina",
+            ],
+            "Derby, Australia": [
+                "Derby, Australia",
+                "Derby, Western Australia",
+            ],
+            "Hasik, Oman": [
+                "Hasik, Oman",
+                "Ḥāsik, Oman",
+            ],
+            "Marrakesh, Morocco": [
+                "Marrakesh, Morocco",
+                "Marrakech, Morocco",
+                "Marrakech, Maroc",
+            ],
+            "Cochabamba, Bolivia": [
+                "Cochabamba, Bolivia",
+            ],
+            "Tacurong, Philippine": [
+                "Tacurong, Philippine",
+                "Tacurong, Philippines",
+                "Tacurong, Sultan Kudarat",
+            ],
+            "Monkey Bay, Malawi": [
+                "Monkey Bay, Malawi",
+            ],
+            // Okato is locked to row 82 but also excluded — if it shows as unmatched, include it
+            "Okato, New Zealand": [
+                "Okato, New Zealand",
+                "Ōkato, New Zealand",
+            ],
+        };
+
+        // Known solutions (same as app.jsx)
+        const knownSolutions = {
+            0: 'Mosul, Iraq', 1: 'Charlotte, North Carolina', 2: 'Ambanja, Madagascar', 3: 'Arzamas, Russia',
+            4: 'Casper, Wyoming', 6: 'Genoa, Italy', 7: 'Gaborone, Botswana', 8: 'Nova Russas, Brazil',
+            9: 'Kabul, Afghanistan', 12: 'Lower Hutt, New Zealand', 13: 'Natif Waterfalls, Oman',
+            14: 'Baku, Azerbaijan', 17: 'Cairo, Egypt', 18: 'Pune, India', 19: 'Buffalo, New York',
+            20: 'Tierra del Fuego', 21: "Divo, Côte d'Ivoire", 22: 'Nome, Alaska', 23: 'Tallinn, Estonia',
+            24: 'Surat, India', 25: "L'Ascension, Québec", 26: 'Antalya, Turkey',
+            28: 'Heard Island, Australia', 29: 'Krasnodar, Russia', 30: 'Eyjafjallajökull, Iceland',
+            32: 'Beatty, Nevada', 33: 'Lima, Peru', 35: 'Algiers, Algeria',
+            38: 'Quito, Ecuador', 39: 'Arles, France', 40: 'Istanbul, Turkey', 41: 'Manaus, Brazil',
+            42: 'Visby, Sweden', 45: 'Christchurch, New Zealand', 48: 'Velingrad, Bulgaria',
+            49: 'Casablanca, Morocco', 51: 'Ankara, Turkey', 52: 'Castelo Branco, Portugal',
+            55: 'Edmonton, Alberta', 57: 'Kupang, Indonesia', 58: 'Orlando, Florida', 59: 'Lahore, Pakistan',
+            64: 'Thane, India', 68: 'Vladivostok, Russia', 70: 'Toad Suck, Arkansas',
+            72: 'Saint-Pierre', 76: 'České Budějovice, Czechia', 78: 'Moscow, Russia',
+            79: 'Curicó, Chile', 80: 'Copenhagen, Denmark', 81: 'Okato, New Zealand',
+            83: 'Sokodé, Togo', 84: 'Accra, Ghana', 86: 'Tashkent, Uzbekistan',
+            87: 'Dimtu, Ethiopia', 88: 'Tijuana, Mexico', 89: 'Montreal, Quebec', 90: 'Wichita, Kansas'
+        };
+
+        const ANSWER_PHRASE = "IN JIMMYS VAULT FIRST PART STICKS ROAMY RESULTS IN BETWEEN STAGE ONE ANSWER PAIRS LAST PART HE SHOWED AT START";
+        const answerLetters = ANSWER_PHRASE.replace(/ /g, '').split('');
+
+        function normalizeCity(name) {
+            const normalized = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+            const wordsRaw = normalized.split(/[^A-Z]+/);
+            const wordLetterCounts = wordsRaw.filter(w => w.length > 0).map(w => w.length);
+            const lettersFull = wordsRaw.filter(w => w.length > 0).join('');
+            return { wordLetterCounts, lettersFull };
+        }
+
+        function getRowWordCounts(row) {
+            return row.blocks.map(b => b.filter(i => i.type === 'square' || i.type === 'icon').length);
+        }
+
+        function getIconPosition(row) {
+            let pos = 0;
+            for (let b = 0; b < row.blocks.length; b++) {
+                for (let c = 0; c < row.blocks[b].length; c++) {
+                    if (row.blocks[b][c].type === 'icon') return pos;
+                    if (row.blocks[b][c].type === 'square') pos++;
+                }
+            }
+            return -1;
+        }
+
+        function getIconType(row) {
+            for (const b of row.blocks) {
+                for (const item of b) {
+                    if (item.type === 'icon') return item.name;
+                }
+            }
+            return null;
+        }
+
+        function matchesStructure(wordCounts, rowWordCounts) {
+            if (wordCounts.length !== rowWordCounts.length) return false;
+            return wordCounts.every((wc, i) => wc === rowWordCounts[i]);
+        }
+
+        function App() {
+            const [selectedVariants, setSelectedVariants] = useState({});
+            const [filter, setFilter] = useState('');
+
+            const lockedCities = useMemo(() => new Set(Object.values(knownSolutions)), []);
+
+            // Unmatched rows
+            const unmatchedRows = useMemo(() => {
+                return puzzleRows.map((row, index) => ({ row, index }))
+                    .filter(({ index }) => !knownSolutions.hasOwnProperty(index));
+            }, []);
+
+            // Unmatched cities
+            const unmatchedCities = useMemo(() => {
+                return cities.filter(c => !lockedCities.has(c));
+            }, [lockedCities]);
+
+            // For each unmatched row, compute which city variants could match
+            const rowMatches = useMemo(() => {
+                const result = {};
+                unmatchedRows.forEach(({ row, index }) => {
+                    const rowWC = getRowWordCounts(row);
+                    const iconPos = getIconPosition(row);
+                    const matches = [];
+
+                    unmatchedCities.forEach(cityName => {
+                        const variants = cityVariants[cityName] || [cityName];
+                        const selectedVariant = selectedVariants[cityName] || cityName;
+
+                        // Check ALL variants
+                        variants.forEach(variant => {
+                            const { wordLetterCounts, lettersFull } = normalizeCity(variant);
+                            if (matchesStructure(wordLetterCounts, rowWC)) {
+                                const letter = iconPos >= 0 && iconPos < lettersFull.length ? lettersFull[iconPos] : '?';
+                                const expectedLetter = answerLetters[index] || '?';
+                                matches.push({
+                                    cityName,
+                                    variant,
+                                    letter,
+                                    expectedLetter,
+                                    isLetterMatch: letter === expectedLetter,
+                                    wordCounts: wordLetterCounts
+                                });
+                            }
+                        });
+                    });
+
+                    result[index] = matches;
+                });
+                return result;
+            }, [unmatchedRows, unmatchedCities, selectedVariants]);
+
+            // For each city, compute which rows could match  
+            const cityMatches = useMemo(() => {
+                const result = {};
+                unmatchedCities.forEach(cityName => {
+                    const variants = cityVariants[cityName] || [cityName];
+                    const allMatches = [];
+
+                    variants.forEach(variant => {
+                        const { wordLetterCounts, lettersFull } = normalizeCity(variant);
+
+                        unmatchedRows.forEach(({ row, index }) => {
+                            const rowWC = getRowWordCounts(row);
+                            if (matchesStructure(wordLetterCounts, rowWC)) {
+                                const iconPos = getIconPosition(row);
+                                const letter = iconPos >= 0 && iconPos < lettersFull.length ? lettersFull[iconPos] : '?';
+                                const expectedLetter = answerLetters[index] || '?';
+                                allMatches.push({
+                                    rowIndex: index,
+                                    variant,
+                                    letter,
+                                    expectedLetter,
+                                    isLetterMatch: letter === expectedLetter,
+                                    wordCounts: wordLetterCounts
+                                });
+                            }
+                        });
+                    });
+
+                    result[cityName] = allMatches;
+                });
+                return result;
+            }, [unmatchedCities, unmatchedRows, selectedVariants]);
+
+            const filteredRows = filter
+                ? unmatchedRows.filter(({ index }) => {
+                    const matches = rowMatches[index] || [];
+                    return matches.some(m => m.isLetterMatch) || String(index + 1).includes(filter);
+                })
+                : unmatchedRows;
+
+            return (
+                <div className="max-w-7xl mx-auto px-4 py-8">
+                    <header className="mb-8 text-center">
+                        <h1 className="text-3xl font-bold text-white mb-2">🧩 Match Helper</h1>
+                        <p className="text-gray-400">
+                            {unmatchedRows.length} unmatched rows · {unmatchedCities.length} unmatched cities
+                        </p>
+                        <a href="beast-solver.html" className="text-indigo-400 text-sm hover:underline mt-2 inline-block">← Back to Solver</a>
+                    </header>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* LEFT: Unmatched Rows */}
+                        <div>
+                            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                                <span>📋</span> Unmatched Rows ({unmatchedRows.length})
+                            </h2>
+                            <div className="space-y-3">
+                                {unmatchedRows.map(({ row, index }) => {
+                                    const rowWC = getRowWordCounts(row);
+                                    const iconPos = getIconPosition(row);
+                                    const iconType = getIconType(row);
+                                    const expected = answerLetters[index] || '?';
+                                    const matches = rowMatches[index] || [];
+                                    const letterMatches = matches.filter(m => m.isLetterMatch);
+                                    const structMatches = matches.filter(m => !m.isLetterMatch);
+
+                                    return (
+                                        <div key={index} className={`bg-beast-800 rounded-lg p-4 border ${letterMatches.length > 0 ? 'border-green-500/50' : 'border-gray-700'}`}>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-xs font-mono bg-gray-700 px-2 py-1 rounded text-gray-300">
+                                                        Row {index + 1}
+                                                    </span>
+                                                    <span className="text-xs text-yellow-400 font-bold">
+                                                        needs "{expected}"
+                                                    </span>
+                                                    {iconType && (
+                                                        <span className="text-xs text-indigo-400">
+                                                            🚗 {iconType} at pos {iconPos}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <span className="text-xs text-gray-500">
+                                                    [{rowWC.join(', ')}]
+                                                </span>
+                                            </div>
+
+                                            {/* Row visual */}
+                                            <div className="flex flex-wrap gap-1 mb-2">
+                                                {row.blocks.map((block, bi) => (
+                                                    <div key={bi} className="row-block">
+                                                        {block.map((item, ci) => (
+                                                            <div key={ci} className={`sq ${item.type === 'icon' ? 'sq-icon' : 'sq-letter'}`}>
+                                                                {item.type === 'icon' ? '🚗' : '_'}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* Matching cities */}
+                                            {letterMatches.length > 0 && (
+                                                <div className="mt-2 p-2 bg-green-900/20 rounded border border-green-700/30">
+                                                    <p className="text-xs text-green-400 font-bold mb-1">✅ Letter matches:</p>
+                                                    {letterMatches.map((m, i) => (
+                                                        <div key={i} className="text-xs text-green-300">
+                                                            {m.variant} → "{m.letter}" ✓
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {structMatches.length > 0 && (
+                                                <div className="mt-2 p-2 bg-gray-800/50 rounded border border-gray-700/30">
+                                                    <p className="text-xs text-gray-400 font-bold mb-1">📐 Structure matches (wrong letter):</p>
+                                                    {structMatches.map((m, i) => (
+                                                        <div key={i} className="text-xs text-gray-500">
+                                                            {m.variant} → "{m.letter}" (needs "{m.expectedLetter}")
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {matches.length === 0 && (
+                                                <p className="text-xs text-red-400 mt-1">❌ No matching cities found for structure [{rowWC.join(', ')}]</p>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* RIGHT: Unmatched Cities */}
+                        <div>
+                            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                                <span>🏙️</span> Unmatched Cities ({unmatchedCities.length})
+                            </h2>
+                            <div className="space-y-3">
+                                {unmatchedCities.map(cityName => {
+                                    const variants = cityVariants[cityName] || [cityName];
+                                    const matches = cityMatches[cityName] || [];
+                                    const letterMatches = matches.filter(m => m.isLetterMatch);
+                                    const hasMatch = matches.length > 0;
+
+                                    return (
+                                        <div key={cityName} className={`bg-beast-800 rounded-lg p-4 border ${letterMatches.length > 0 ? 'border-green-500/50' : hasMatch ? 'border-yellow-500/30' : 'border-red-500/30'}`}>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <h3 className="font-bold text-white text-sm">{cityName}</h3>
+                                                <span className={`text-xs px-2 py-0.5 rounded ${letterMatches.length > 0 ? 'bg-green-900 text-green-300' : hasMatch ? 'bg-yellow-900 text-yellow-300' : 'bg-red-900 text-red-300'}`}>
+                                                    {letterMatches.length > 0 ? `${letterMatches.length} ✓` : hasMatch ? `${matches.length} struct` : 'no match'}
+                                                </span>
+                                            </div>
+
+                                            {/* Name variants */}
+                                            <div className="mb-2">
+                                                <p className="text-xs text-gray-500 mb-1">Name variants:</p>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {variants.map((v, i) => {
+                                                        const norm = normalizeCity(v);
+                                                        return (
+                                                            <span key={i} className="text-xs bg-gray-700 px-2 py-1 rounded text-gray-300" title={`[${norm.wordLetterCounts.join(', ')}] = ${norm.lettersFull}`}>
+                                                                {v} <span className="text-gray-500">[{norm.wordLetterCounts.join(',')}]</span>
+                                                            </span>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            {/* Matching rows */}
+                                            {letterMatches.length > 0 && (
+                                                <div className="p-2 bg-green-900/20 rounded border border-green-700/30">
+                                                    <p className="text-xs text-green-400 font-bold mb-1">✅ Perfect matches:</p>
+                                                    {letterMatches.map((m, i) => (
+                                                        <div key={i} className="text-xs text-green-300">
+                                                            Row {m.rowIndex + 1} using "{m.variant}" → "{m.letter}" ✓
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {matches.filter(m => !m.isLetterMatch).length > 0 && (
+                                                <div className="mt-1 p-2 bg-gray-800/50 rounded border border-gray-700/30">
+                                                    <p className="text-xs text-gray-400 font-bold mb-1">📐 Structure only:</p>
+                                                    {matches.filter(m => !m.isLetterMatch).map((m, i) => (
+                                                        <div key={i} className="text-xs text-gray-500">
+                                                            Row {m.rowIndex + 1} "{m.variant}" → "{m.letter}" (needs "{m.expectedLetter}")
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {matches.length === 0 && (
+                                                <p className="text-xs text-red-400">❌ No rows match any variant</p>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+
+</html>
