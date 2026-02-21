@@ -253,22 +253,31 @@ function App() {
 
       {/* ====== ANSWER PHRASE DISPLAY ====== */}
       {(() => {
-        const ANSWER_PHRASE = "IN JIMMYS VAULT FIRST PART STICK ROAMY RESULTS IN BETWEEN STAGE ONE ANSWER PAIRS LAST PART HE SHOWED AT START";
+        const ANSWER_PHRASE = "IN JIMMYS VAULT FIRST PART STICKS ROAMY RESULTS IN BETWEEN STAGE ONE ANSWER PAIRS LAST PART HE SHOWED AT START";
         const answerLetters = ANSWER_PHRASE.replace(/ /g, '').split('');
         const answerWords = ANSWER_PHRASE.split(' ');
 
-        // Build word-boundary map: for each letter index, track which word it belongs to
+        // Build word-boundary map
         let letterIdx = 0;
-        const wordBoundaries = []; // index where each word starts
+        const wordBoundaries = [];
         answerWords.forEach(word => {
           wordBoundaries.push(letterIdx);
           letterIdx += word.length;
         });
 
-        // Count matched vs total
-        const matchCount = answerLetters.reduce((count, expectedLetter, i) => {
-          const v = vehicles[i];
-          return count + (v && v.letter && v.letter.toUpperCase() === expectedLetter ? 1 : 0);
+        // For each row, compute what letter the current selection produces
+        const rowLetters = puzzleRows.map((row, index) => {
+          const selectedId = selections[index];
+          if (!selectedId) return '';
+          const cityObj = processedCities.find(c => c.id === selectedId);
+          if (!cityObj) return '';
+          const info = getVehicleInfo(row, cityObj);
+          return info ? info.letter.toUpperCase() : '';
+        });
+
+        // Count matches
+        const matchCount = answerLetters.reduce((count, expected, i) => {
+          return count + (rowLetters[i] === expected ? 1 : 0);
         }, 0);
 
         return (
@@ -290,18 +299,20 @@ function App() {
                   <div key={wIdx} className="flex gap-0.5 items-end">
                     {word.split('').map((expectedLetter, charIdx) => {
                       const rowIdx = startIdx + charIdx;
-                      const v = vehicles[rowIdx];
-                      const actualLetter = v ? v.letter : '';
-                      const isMatch = actualLetter && actualLetter.toUpperCase() === expectedLetter;
+                      const actualLetter = rowLetters[rowIdx] || '';
+                      const isMatch = actualLetter === expectedLetter;
+                      const hasSelection = !!selections[rowIdx];
 
                       return (
                         <div
                           key={charIdx}
                           className={`w-8 h-8 rounded-sm flex items-center justify-center font-bold text-sm transition-all ${isMatch
-                            ? 'bg-green-500/20 border border-green-500/60 text-green-300 shadow-[0_0_8px_rgba(34,197,94,0.3)]'
-                            : 'bg-gray-700/40 border border-gray-600/50 text-gray-500'
+                              ? 'bg-green-500/20 border border-green-500/60 text-green-300 shadow-[0_0_8px_rgba(34,197,94,0.3)]'
+                              : hasSelection
+                                ? 'bg-red-500/20 border border-red-500/60 text-red-400'
+                                : 'bg-gray-700/40 border border-gray-600/50 text-gray-500'
                             }`}
-                          title={`Row ${rowIdx + 1}: expects "${expectedLetter}"${v ? `, selected="${actualLetter || '?'}"` : ''}`}
+                          title={`Row ${rowIdx + 1}: expects "${expectedLetter}"${hasSelection ? `, got="${actualLetter || '?'}"` : ' (no selection)'}`}
                         >
                           {isMatch ? actualLetter : expectedLetter}
                         </div>
