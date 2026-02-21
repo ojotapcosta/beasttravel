@@ -114,7 +114,7 @@ function App() {
       8: 'Nova Russas, Brazil',           // Row 9 → V
       9: 'Kabul, Afghanistan',            // Row 10 → A
       // Row 11: unknown → U
-      // Row 12: unknown → L
+      11: 'San Miguel de Tucumán, Argentina', // Row 12 → L
       12: 'Lower Hutt, New Zealand',       // Row 13 → T
       13: 'Natif Waterfalls, Oman',        // Row 14 → F
       14: 'Baku, Azerbaijan',              // Row 15 → I
@@ -137,7 +137,7 @@ function App() {
       // Row 32: unknown → M (Derby is WRONG, skip it)
       32: 'Beatty, Nevada',               // Row 33 → Y
       33: 'Lima, Peru',                    // Row 34 → R
-      // Row 35: unknown → E
+      34: 'Copenhagen, Denmark',           // Row 35 → E
       35: 'Algiers, Algeria',             // Row 36 → S
       // Rows 37-38: unknown
       38: 'Quito, Ecuador',               // Row 39 → T
@@ -145,7 +145,8 @@ function App() {
       40: 'Istanbul, Turkey',             // Row 41 → I
       41: 'Manaus, Brazil',               // Row 42 → N
       42: 'Visby, Sweden',                 // Row 43 → B
-      // Rows 44-45: unknown
+      43: 'Georgetown, Ascension Island',  // Row 44 → E
+      44: 'Iturup, Japan/Russia',          // Row 45 → T
       45: 'Christchurch, New Zealand',    // Row 46 → H
       // Rows 47-48: unknown
       48: 'Velingrad, Bulgaria',           // Row 49 → N
@@ -176,7 +177,7 @@ function App() {
       77: 'Yellowknife, Northwest Territories', // Row 78 → E
       78: 'Moscow, Russia',                // Row 79 → S
       79: 'Curicó, Chile',                 // Row 80 → H
-      80: 'Copenhagen, Denmark',           // Row 81 → O
+      80: 'Cochabamba, Bolivia',            // Row 81 → O
       81: 'Okato, New Zealand',            // Row 82 → W
       // Row 83: unknown → E
       83: 'Sokodé, Togo',                  // Row 84 → D

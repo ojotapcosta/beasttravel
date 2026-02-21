@@ -60,6 +60,7 @@ const cities = [
   "Qingdao, China",
   "Saint-Pierre",
   "Salvador, Brazil",
+  "San Miguel de Tucumán, Argentina",
   "José de San Martín, Argentina",
   "Derby, Australia",
   "Manaus, Brazil",
