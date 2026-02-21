@@ -120,7 +120,7 @@ function App() {
       14: 'Baku, Azerbaijan',              // Row 15 → I
       // Row 16: unknown → R
       // Row 17: unknown → S
-      17: 'Cairo, Egypt',                  // Row 18 → T
+      // Row 18: unknown → T
       18: 'Pune, India',                   // Row 19 → P
       19: 'Buffalo, New York',             // Row 20 → A
       20: 'Tierra del Fuego',              // Row 21 → R
@@ -130,14 +130,16 @@ function App() {
       24: 'Surat, India',                  // Row 25 → I
       25: "L'Ascension, Québec",           // Row 26 → C
       26: 'Antalya, Turkey',               // Row 27 → K
-      // Row 28: unknown → R
-      28: 'Heard Island, Australia',       // Row 29 → O (wait... R?)
+      // Row 28: unknown → S
+      28: 'Heard Island, Australia',       // Row 29 → R
       29: 'Krasnodar, Russia',             // Row 30 → O
       30: 'Eyjafjallajökull, Iceland',     // Row 31 → A
-      // Row 32: unknown → M
-      // Row 33: unknown → Y
+      // Row 32: unknown → M (Derby is WRONG, skip it)
+      32: 'Beatty, Nevada',               // Row 33 → Y
       33: 'Lima, Peru',                    // Row 34 → R
-      // Rows 35-42: unknown
+      // Row 35: unknown → E
+      35: 'Algiers, Algeria',             // Row 36 → S
+      // Rows 37-42: unknown
       42: 'Visby, Sweden',                 // Row 43 → B
       // Rows 44-52: unknown
       52: 'Castelo Branco, Portugal',      // Row 53 → G
@@ -168,9 +170,12 @@ function App() {
       init[Number(idx)] = cityName;
     });
 
+    // Rows where auto-match is known to be wrong — do NOT auto-select
+    const skipRows = new Set([31]); // 0-indexed: Row 32 (Derby is wrong)
+
     // For remaining rows, auto-select if there's exactly one match
     puzzleRows.forEach((row, index) => {
-      if (init[index]) return; // already locked
+      if (init[index] || skipRows.has(index)) return;
       const initialMatches = processedCities.filter(c => matchRowToCity(row, c));
       if (initialMatches.length === 1) {
         init[index] = initialMatches[0].id;
@@ -307,10 +312,10 @@ function App() {
                         <div
                           key={charIdx}
                           className={`w-8 h-8 rounded-sm flex items-center justify-center font-bold text-sm transition-all ${isMatch
-                              ? 'bg-green-500/20 border border-green-500/60 text-green-300 shadow-[0_0_8px_rgba(34,197,94,0.3)]'
-                              : hasSelection
-                                ? 'bg-red-500/20 border border-red-500/60 text-red-400'
-                                : 'bg-gray-700/40 border border-gray-600/50 text-gray-500'
+                            ? 'bg-green-500/20 border border-green-500/60 text-green-300 shadow-[0_0_8px_rgba(34,197,94,0.3)]'
+                            : hasSelection
+                              ? 'bg-red-500/20 border border-red-500/60 text-red-400'
+                              : 'bg-gray-700/40 border border-gray-600/50 text-gray-500'
                             }`}
                           title={`Row ${rowIdx + 1}: expects "${expectedLetter}"${hasSelection ? `, got="${actualLetter || '?'}"` : ' (no selection)'}`}
                         >
