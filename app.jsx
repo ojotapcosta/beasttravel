@@ -99,12 +99,84 @@ function App() {
 
   const [selections, setSelections] = useState(() => {
     const init = {};
+
+    // ===== Hardcoded solutions from decoded answer table =====
+    // Row numbers are 1-indexed in comments, 0-indexed as keys
+    const knownSolutions = {
+      0: 'Mosul, Iraq',                   // Row 1 → I
+      1: 'Charlotte, North Carolina',     // Row 2 → N
+      2: 'Ambanja, Madagascar',           // Row 3 → J
+      3: 'Arzamas, Russia',               // Row 4 → I
+      4: 'Casper, Wyoming',               // Row 5 → M
+      // Row 6: unknown → M
+      6: 'Genoa, Italy',                  // Row 7 → Y
+      7: 'Gaborone, Botswana',            // Row 8 → S
+      8: 'Nova Russas, Brazil',           // Row 9 → V
+      9: 'Kabul, Afghanistan',            // Row 10 → A
+      // Row 11: unknown → U
+      // Row 12: unknown → L
+      12: 'Lower Hutt, New Zealand',       // Row 13 → T
+      13: 'Natif Waterfalls, Oman',        // Row 14 → F
+      14: 'Baku, Azerbaijan',              // Row 15 → I
+      // Row 16: unknown → R
+      // Row 17: unknown → S
+      17: 'Cairo, Egypt',                  // Row 18 → T
+      18: 'Pune, India',                   // Row 19 → P
+      19: 'Buffalo, New York',             // Row 20 → A
+      20: 'Tierra del Fuego',              // Row 21 → R
+      21: "Divo, Côte d'Ivoire",           // Row 22 → T
+      22: 'Nome, Alaska',                  // Row 23 → S
+      // Row 24: unknown → T
+      24: 'Surat, India',                  // Row 25 → I
+      25: "L'Ascension, Québec",           // Row 26 → C
+      26: 'Antalya, Turkey',               // Row 27 → K
+      // Row 28: unknown → R
+      28: 'Heard Island, Australia',       // Row 29 → O (wait... R?)
+      29: 'Krasnodar, Russia',             // Row 30 → O
+      30: 'Eyjafjallajökull, Iceland',     // Row 31 → A
+      // Row 32: unknown → M
+      // Row 33: unknown → Y
+      33: 'Lima, Peru',                    // Row 34 → R
+      // Rows 35-42: unknown
+      42: 'Visby, Sweden',                 // Row 43 → B
+      // Rows 44-52: unknown
+      52: 'Castelo Branco, Portugal',      // Row 53 → G
+      // Rows 54-72: unknown
+      72: 'Saint-Pierre',                  // Row 73 → P
+      // Row 74: unknown → A
+      // Row 75: unknown → R
+      // Row 76: unknown → T
+      76: 'České Budějovice, Czechia',     // Row 77 → H
+      // Row 78: unknown → E
+      // Row 79: unknown → S
+      79: 'Curicó, Chile',                 // Row 80 → H
+      80: 'Copenhagen, Denmark',           // Row 81 → O
+      81: 'Okato, New Zealand',            // Row 82 → W
+      // Row 83: unknown → E
+      83: 'Sokodé, Togo',                  // Row 84 → D
+      // Row 85: unknown → A
+      // Row 86: unknown → T
+      86: 'Tashkent, Uzbekistan',          // Row 87 → S
+      87: 'Dimtu, Ethiopia',               // Row 88 → T
+      88: 'Tijuana, Mexico',               // Row 89 → A
+      89: 'Montreal, Quebec',              // Row 90 → R
+      90: 'Wichita, Kansas',               // Row 91 → T
+    };
+
+    // Apply known solutions
+    Object.entries(knownSolutions).forEach(([idx, cityName]) => {
+      init[Number(idx)] = cityName;
+    });
+
+    // For remaining rows, auto-select if there's exactly one match
     puzzleRows.forEach((row, index) => {
+      if (init[index]) return; // already locked
       const initialMatches = processedCities.filter(c => matchRowToCity(row, c));
       if (initialMatches.length === 1) {
         init[index] = initialMatches[0].id;
       }
     });
+
     return init;
   });
 
@@ -179,53 +251,77 @@ function App() {
       <header className="mb-12 text-center">
       </header>
 
-      {/* Decoded Phrases Section */}
-      <div className="mb-12 space-y-8 bg-beast-800 p-8 rounded-xl border border-gray-700 shadow-2xl">
-        <div>
-          <h2 className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-4 border-b border-gray-700 pb-2 flex items-center gap-2">
-            <span>✨</span> All Vehicles (Full Phrase)
-          </h2>
-          <div className="flex flex-wrap gap-2 mt-4">
-            {vehicles.map((v, i) => <VehicleSquare key={`all-${i}`} type={v.type} letter={v.letter} options={v.options} onSelect={(cityId) => setSelections(s => ({ ...s, [v.index]: cityId }))} />)}
-          </div>
-        </div>
+      {/* ====== ANSWER PHRASE DISPLAY ====== */}
+      {(() => {
+        const ANSWER_PHRASE = "IN JIMMYS VAULT FIRST PART STICK ROAMY RESULTS IN BETWEEN STAGE ONE ANSWER PAIRS LAST PART HE SHOWED AT START";
+        const answerLetters = ANSWER_PHRASE.replace(/ /g, '').split('');
+        const answerWords = ANSWER_PHRASE.split(' ');
 
-        <div>
-          <h2 className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-4 border-b border-gray-700 pb-2 flex items-center gap-2">
-            <span>🚗</span> Cars Only
-          </h2>
-          <div className="flex flex-wrap gap-2 mt-4">
-            {vehicles.filter(v => v.type === 'Car').map((v, i) => <VehicleSquare key={`car-${i}`} type={v.type} letter={v.letter} options={v.options} onSelect={(cityId) => setSelections(s => ({ ...s, [v.index]: cityId }))} />)}
-          </div>
-        </div>
+        // Build word-boundary map: for each letter index, track which word it belongs to
+        let letterIdx = 0;
+        const wordBoundaries = []; // index where each word starts
+        answerWords.forEach(word => {
+          wordBoundaries.push(letterIdx);
+          letterIdx += word.length;
+        });
 
-        <div>
-          <h2 className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-4 border-b border-gray-700 pb-2 flex items-center gap-2">
-            <span>🐎</span> Horses Only
-          </h2>
-          <div className="flex flex-wrap gap-2 mt-4">
-            {vehicles.filter(v => v.type === 'Horse').map((v, i) => <VehicleSquare key={`horse-${i}`} type={v.type} letter={v.letter} options={v.options} onSelect={(cityId) => setSelections(s => ({ ...s, [v.index]: cityId }))} />)}
-          </div>
-        </div>
+        // Count matched vs total
+        const matchCount = answerLetters.reduce((count, expectedLetter, i) => {
+          const v = vehicles[i];
+          return count + (v && v.letter && v.letter.toUpperCase() === expectedLetter ? 1 : 0);
+        }, 0);
 
-        <div>
-          <h2 className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-4 border-b border-gray-700 pb-2 flex items-center gap-2">
-            <span>✈️</span> Planes Only
-          </h2>
-          <div className="flex flex-wrap gap-2 mt-4">
-            {vehicles.filter(v => v.type === 'Plane').map((v, i) => <VehicleSquare key={`plane-${i}`} type={v.type} letter={v.letter} options={v.options} onSelect={(cityId) => setSelections(s => ({ ...s, [v.index]: cityId }))} />)}
-          </div>
-        </div>
+        return (
+          <div className="mb-12 bg-beast-800 p-8 rounded-xl border border-gray-700 shadow-2xl">
+            <div className="flex items-center justify-between mb-4 border-b border-gray-700 pb-3">
+              <h2 className="text-gray-400 text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                <span>🔑</span> Decoded Answer
+              </h2>
+              <span className="text-xs font-mono text-gray-500">
+                {matchCount}/{answerLetters.length} matched
+              </span>
+            </div>
 
-        <div>
-          <h2 className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-4 border-b border-gray-700 pb-2 flex items-center gap-2">
-            <span>⛴️</span> Boats Only
-          </h2>
-          <div className="flex flex-wrap gap-2 mt-4">
-            {vehicles.filter(v => v.type === 'Boat').map((v, i) => <VehicleSquare key={`boat-${i}`} type={v.type} letter={v.letter} options={v.options} onSelect={(cityId) => setSelections(s => ({ ...s, [v.index]: cityId }))} />)}
+            {/* Render word by word */}
+            <div className="flex flex-wrap items-end gap-x-4 gap-y-3 mt-4">
+              {answerWords.map((word, wIdx) => {
+                const startIdx = wordBoundaries[wIdx];
+                return (
+                  <div key={wIdx} className="flex gap-0.5 items-end">
+                    {word.split('').map((expectedLetter, charIdx) => {
+                      const rowIdx = startIdx + charIdx;
+                      const v = vehicles[rowIdx];
+                      const actualLetter = v ? v.letter : '';
+                      const isMatch = actualLetter && actualLetter.toUpperCase() === expectedLetter;
+
+                      return (
+                        <div
+                          key={charIdx}
+                          className={`w-8 h-8 rounded-sm flex items-center justify-center font-bold text-sm transition-all ${isMatch
+                            ? 'bg-green-500/20 border border-green-500/60 text-green-300 shadow-[0_0_8px_rgba(34,197,94,0.3)]'
+                            : 'bg-gray-700/40 border border-gray-600/50 text-gray-500'
+                            }`}
+                          title={`Row ${rowIdx + 1}: expects "${expectedLetter}"${v ? `, selected="${actualLetter || '?'}"` : ''}`}
+                        >
+                          {isMatch ? actualLetter : expectedLetter}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Full phrase as text */}
+            <div className="mt-6 p-4 bg-gray-900/60 rounded-lg border border-gray-700/50">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Full Phrase:</p>
+              <p className="text-sm font-mono text-gray-300 leading-relaxed tracking-wide">
+                {ANSWER_PHRASE}
+              </p>
+            </div>
           </div>
-        </div>
-      </div>
+        );
+      })()}
 
       <div className="space-y-6">
         {puzzleRows.map((row, index) => (

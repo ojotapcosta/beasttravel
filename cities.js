@@ -72,5 +72,11 @@ const cities = [
   "Edmonton, Alberta",
   "Vladivostok, Russia",
   "Cochabamba, Bolivia",
-  "Tacurong, Philippine"
+  "Tacurong, Philippine",
+  "Casper, Wyoming",
+  "Gaborone, Botswana",
+  "Lower Hutt, New Zealand",
+  "Natif Waterfalls, Oman",
+  "L'Ascension, Québec",
+  "Krasnodar, Russia"
 ];
