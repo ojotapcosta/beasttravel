@@ -162,7 +162,8 @@ function App() {
       58: 'Orlando, Florida',              // Row 59 → S
       59: 'Lahore, Pakistan',              // Row 60 → W
       60: 'Monkey Bay, Malawi',            // Row 61 → W
-      // Rows 62-64: unknown
+      61: 'Île de la Possession',            // Row 62 → E
+      // Rows 63-64: unknown
       64: 'Thane, India',                  // Row 65 → E
       // Rows 66-68: unknown
       68: 'Vladivostok, Russia',           // Row 69 → T
