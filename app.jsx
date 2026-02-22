@@ -148,7 +148,8 @@ function App() {
       43: 'Ascension Island',               // Row 44 → E
       44: 'Iturup, Russia',                 // Row 45 → T
       45: 'Christchurch, New Zealand',    // Row 46 → H
-      // Rows 47-48: unknown
+      // Row 47: unknown
+      47: 'Male, Maldives',                // Row 48 → M
       48: 'Velingrad, Bulgaria',           // Row 49 → N
       49: 'Casablanca, Morocco',           // Row 50 → A
       50: 'Maputo, Mozambique',            // Row 51 → T
@@ -165,7 +166,8 @@ function App() {
       61: 'Île de la Possession',            // Row 62 → E
       // Rows 63-64: unknown
       64: 'Thane, India',                  // Row 65 → E
-      // Rows 66-68: unknown
+      65: 'Marondera, Zimbabwe',           // Row 66 → R
+      66: 'Campia Turzi, Romania',         // Row 67 → R
       68: 'Vladivostok, Russia',           // Row 69 → T
       69: 'DeKalb, Illinois',              // Row 70 → A
       70: 'Toad Suck, Arkansas',           // Row 71 → S
@@ -173,7 +175,7 @@ function App() {
       72: 'Saint-Pierre',                  // Row 73 → P
       // Row 74: unknown → A
       // Row 75: unknown → R
-      // Row 76: unknown → T
+      75: 'Doha, Qatar',                   // Row 76 → T
       76: 'České Budějovice, Czechia',     // Row 77 → H
       77: 'Yellowknife, Northwest Territories', // Row 78 → E
       78: 'Moscow, Russia',                // Row 79 → S
