@@ -145,7 +145,7 @@ function App() {
       40: 'Istanbul, Turkey',             // Row 41 → I
       41: 'Manaus, Brazil',               // Row 42 → N
       42: 'Visby, Sweden',                 // Row 43 → B
-      43: 'Georgetown, Ascension Island',  // Row 44 → E
+      43: 'Ascension Island',               // Row 44 → E
       44: 'Iturup, Japan/Russia',          // Row 45 → T
       45: 'Christchurch, New Zealand',    // Row 46 → H
       // Rows 47-48: unknown
