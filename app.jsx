@@ -196,6 +196,14 @@ function App() {
       init[Number(idx)] = cityName;
     });
 
+    // Merge accepted matches from Match Helper (localStorage)
+    try {
+      const accepted = JSON.parse(localStorage.getItem('beastAccepted') || '{}');
+      Object.entries(accepted).forEach(([idx, cityName]) => {
+        if (!init[Number(idx)]) init[Number(idx)] = cityName;
+      });
+    } catch (e) { }
+
     // Rows where auto-match is known to be wrong — do NOT auto-select
     const skipRows = new Set([31, 62, 65, 75, 85]); // Row 32 (Derby), 63 (Okato), 66 (Velingrad), 76 (Pune), 86 (Christchurch)
 
