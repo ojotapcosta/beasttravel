@@ -11,6 +11,7 @@ const cities = [
   "Divo, Côte d'Ivoire",
   "Eyjafjallajökull, Iceland",
   "Ascension Island",
+  "Île de la Possession",
   "Heard Island, Australia",
   "Iturup, Russia",
   "Kabul, Afghanistan",
