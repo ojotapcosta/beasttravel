@@ -25,7 +25,6 @@ const cities = [
   "Nome, Alaska",
   "Cairns, Queensland, Australia",
   "Quito, Ecuador",
-  "Seoul, South Korea",
   "Tampa, Florida",
   "Tashkent, Uzbekistan",
   "Tierra del Fuego",
