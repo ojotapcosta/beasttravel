@@ -210,7 +210,7 @@
             42: 'Visby, Sweden', 45: 'Christchurch, New Zealand', 47: 'Male, Maldives', 48: 'Velingrad, Bulgaria',
             11: 'San Miguel de Tucumán, Argentina', 34: 'Copenhagen, Denmark', 43: 'Ascension Island', 44: 'Iturup, Russia', 49: 'Casablanca, Morocco', 50: 'Maputo, Mozambique', 51: 'Ankara, Turkey',
             52: 'Castelo Branco, Portugal', 54: 'Marrakesh, Morocco', 55: 'Edmonton, Alberta', 57: 'Kupang, Indonesia', 58: 'Orlando, Florida', 59: 'Lahore, Pakistan',
-            60: 'Monkey Bay, Malawi', 61: 'Île de la Possession', 64: 'Thane, India', 65: 'Marondera, Zimbabwe', 66: 'Campia Turzi, Romania', 68: 'Vladivostok, Russia', 69: 'DeKalb, Illinois', 70: 'Toad Suck, Arkansas',
+            60: 'Monkey Bay, Malawi', 61: 'Île de la Possession', 62: 'Tampa Bay, Florida', 64: 'Thane, India', 65: 'Marondera, Zimbabwe', 66: 'Campia Turzi, Romania', 68: 'Vladivostok, Russia', 69: 'DeKalb, Illinois', 70: 'Toad Suck, Arkansas',
             72: 'Saint-Pierre', 75: 'Doha, Qatar', 76: 'České Budějovice, Czechia', 77: 'Yellowknife, Northwest Territories', 78: 'Moscow, Russia',
             79: 'Curicó, Chile', 80: 'Cochabamba, Bolivia', 81: 'Okato, New Zealand',
             83: 'Sokodé, Togo', 84: 'Accra, Ghana', 86: 'Tashkent, Uzbekistan',
@@ -220,7 +220,7 @@
 
         // ===== Brute-Force Geographic Candidates =====
         const bruteForceCandidates = {
-            5:  ["Managua, Nicaragua", "Memphis, Tennessee", "Misrata, Libya"],
+            5: ["Managua, Nicaragua", "Memphis, Tennessee", "Misrata, Libya"],
             10: ["Tabaucu, Brazil"],
             15: ["Tripoli, Lebanon", "Tbilisi, Georgia", "Donetsk, Ukraine"],
             16: ["Tampa, Florida"],
@@ -246,9 +246,9 @@
 
 
         // ===== localStorage sync for accept/reject =====
-        function getAccepted() { try { return JSON.parse(localStorage.getItem("beastAccepted") || "{}"); } catch(e) { return {}; } }
+        function getAccepted() { try { return JSON.parse(localStorage.getItem("beastAccepted") || "{}"); } catch (e) { return {}; } }
         function saveAccepted(obj) { localStorage.setItem("beastAccepted", JSON.stringify(obj)); }
-        function getRejected() { try { return JSON.parse(localStorage.getItem("beastRejected") || "{}"); } catch(e) { return {}; } }
+        function getRejected() { try { return JSON.parse(localStorage.getItem("beastRejected") || "{}"); } catch (e) { return {}; } }
         function saveRejected(obj) { localStorage.setItem("beastRejected", JSON.stringify(obj)); }
 
         const ANSWER_PHRASE = "IN JIMMYS VAULT FIRST PART STICKS ROAMY RESULTS IN BETWEEN STAGE ONE ANSWER PAIRS LAST PART HE SHOWED AT START";
@@ -296,9 +296,9 @@
             const [filter, setFilter] = useState('');
             const [accepted, setAccepted] = useState(getAccepted());
             const [rejected, setRejected] = useState(getRejected());
-            const acceptCity = (idx, city) => { const a = {...accepted, [idx]: city}; setAccepted(a); saveAccepted(a); };
-            const rejectCity = (idx, city) => { const r = {...rejected}; if (!r[idx]) r[idx] = []; if (!r[idx].includes(city)) r[idx].push(city); setRejected(r); saveRejected(r); };
-            const unacceptCity = (idx) => { const a = {...accepted}; delete a[idx]; setAccepted(a); saveAccepted(a); };
+            const acceptCity = (idx, city) => { const a = { ...accepted, [idx]: city }; setAccepted(a); saveAccepted(a); };
+            const rejectCity = (idx, city) => { const r = { ...rejected }; if (!r[idx]) r[idx] = []; if (!r[idx].includes(city)) r[idx].push(city); setRejected(r); saveRejected(r); };
+            const unacceptCity = (idx) => { const a = { ...accepted }; delete a[idx]; setAccepted(a); saveAccepted(a); };
 
             const lockedCities = useMemo(() => new Set(Object.values(knownSolutions)), []);
 
@@ -487,8 +487,8 @@
                                                         <div key={i} className="text-xs text-purple-300 flex items-center justify-between gap-2">
                                                             <span>{c}</span>
                                                             <span className="flex gap-1 ml-2 flex-shrink-0">
-                                                              <button onClick={() => acceptCity(index, c)} className="px-2 py-0.5 bg-green-700 hover:bg-green-600 text-white rounded text-xs cursor-pointer">✅</button>
-                                                              <button onClick={() => rejectCity(index, c)} className="px-2 py-0.5 bg-red-900 hover:bg-red-700 text-white rounded text-xs cursor-pointer">❌</button>
+                                                                <button onClick={() => acceptCity(index, c)} className="px-2 py-0.5 bg-green-700 hover:bg-green-600 text-white rounded text-xs cursor-pointer">✅</button>
+                                                                <button onClick={() => rejectCity(index, c)} className="px-2 py-0.5 bg-red-900 hover:bg-red-700 text-white rounded text-xs cursor-pointer">❌</button>
                                                             </span>
                                                         </div>
                                                     ))}

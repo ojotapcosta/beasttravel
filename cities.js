@@ -81,5 +81,6 @@ const cities = [
   "Male, Maldives",
   "Marondera, Zimbabwe",
   "Campia Turzi, Romania",
-  "Doha, Qatar"
+  "Doha, Qatar",
+  "Tampa Bay, Florida"
 ];
