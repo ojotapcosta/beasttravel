@@ -77,5 +77,9 @@ const cities = [
   "Lower Hutt, New Zealand",
   "Natif Waterfalls, Oman",
   "L'Ascension, Québec",
-  "Krasnodar, Russia"
+  "Krasnodar, Russia",
+  "Male, Maldives",
+  "Marondera, Zimbabwe",
+  "Campia Turzi, Romania",
+  "Doha, Qatar"
 ];
