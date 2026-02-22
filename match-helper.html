@@ -217,6 +217,33 @@
             87: 'Dimtu, Ethiopia', 88: 'Tijuana, Mexico', 89: 'Montreal, Quebec', 90: 'Wichita, Kansas'
         };
 
+
+        // ===== Brute-Force Geographic Candidates =====
+        const bruteForceCandidates = {
+            5:  ["Managua, Nicaragua", "Memphis, Tennessee", "Misrata, Libya"],
+            10: ["Tabaucu, Brazil"],
+            15: ["Tripoli, Lebanon", "Tbilisi, Georgia", "Donetsk, Ukraine"],
+            16: ["Tampa, Florida"],
+            27: ["Qaraghandy, Kazakhstan"],
+            31: ["Derby, Australia"],
+            36: ["Hust, Ukraine", "Sumi, Ukraine"],
+            37: ["Seven Hills, Australia", "Surry Hills, Australia", "North Lakes, Australia"],
+            46: ["San Lorenzo, Argentina", "San Vicente, Argentina"],
+            47: ["Male, Maldives"],
+            53: ["Hasik, Oman", "Tacurong, Philippines"],
+            56: ["Qingdao, China", "Seoul, South Korea"],
+            63: ["Dasmarinas, Philippines"],
+            65: ["Marondera, Zimbabwe", "Bulawayo, Zimbabwe"],
+            66: ["Kohtla-Jarve, Estonia", "Campia Turzi, Romania"],
+            67: ["Donetsk, Ukraine", "Tbilisi, Georgia"],
+            71: ["Sungai Siput, Malaysia", "Amphoe Ranot, Thailand"],
+            73: ["Antananarivo, Madagascar", "Charallave, Venezuela", "Springvale, Australia"],
+            74: ["Kutna Hora, Czechia", "Satul Mare, Romania"],
+            75: ["Doha, Qatar"],
+            82: ["Brazzaville", "Yellowknife"],
+            85: ["Antananarivo, Madagascar", "Kattaqurghon, Uzbekistan"],
+        };
+
         const ANSWER_PHRASE = "IN JIMMYS VAULT FIRST PART STICKS ROAMY RESULTS IN BETWEEN STAGE ONE ANSWER PAIRS LAST PART HE SHOWED AT START";
         const answerLetters = ANSWER_PHRASE.replace(/ /g, '').split('');
 
@@ -431,7 +458,17 @@
                                                 </div>
                                             )}
                                             {matches.length === 0 && (
-                                                <p className="text-xs text-red-400 mt-1">❌ No matching cities found for structure [{rowWC.join(', ')}]</p>
+                                                <p className="text-xs text-red-400 mt-1">❌ No matching cities from list for structure [{rowWC.join(', ')}]</p>
+                                            )}
+                                            {bruteForceCandidates[index] && bruteForceCandidates[index].length > 0 && (
+                                                <div className="mt-2 p-2 bg-purple-900/20 rounded border border-purple-700/30">
+                                                    <p className="text-xs text-purple-400 font-bold mb-1">🔮 Brute-force candidates:</p>
+                                                    {bruteForceCandidates[index].map((c, i) => (
+                                                        <div key={i} className="text-xs text-purple-300">
+                                                            {c}
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             )}
                                         </div>
                                     );
